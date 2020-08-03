@@ -34,26 +34,24 @@ def get_il2_consumers(tnaive, n_th1_int, n_th2_int, n_th1, n_th2, model = "cross
     return il2_consumers
 
 
-def th_cell_branch(th_state, time, model, d, core):
+def th_cell_branch(th_state, time, homeostasis_model, d, core):
     
     # calculate cytokines based on cell numbers
-    tnaive, n_th1_int, n_th2_int, n_th1, n_th2 = assign_states(th_state, d, core)
+    # split array into myc and th state array
     myc = th_state[-1]
+    th_state = th_state[:-1]
     
-    il2_producers = get_il2_producers(tnaive, n_th1_int, n_th2_int, n_th1, n_th2)
-    il2_consumers = get_il2_consumers(tnaive, n_th1_int, n_th2_int, n_th1, n_th2)
-    
-    ifng, il21, il2 = calc_cytokines(d, il2_producers, n_th1, n_th2)
-    il2 = calc_il2_consumption(il2, il2_consumers, d)
-        
+    cyto_producers = get_cyto_producers(th_state, d, core)
+    ifng, il21, il2 = calc_cytokines(d, *cyto_producers)
+    cytokines = [il2, ifng, il21]
     # calculate cytokine effects on probability, differentiation and proliferation
-    beta1_p, beta2_p = calc_prolif_rates(ifng, il21, il2, d)
-    beta1, beta2 = calc_diff_rates(ifng, il21, il2, d)
-    p1, p2 = calc_probs(ifng, il21, il2, beta1, beta2, d, core)
+    beta1_p, beta2_p = calc_prolif_rates(d, *cytokines)
+    beta1, beta2 = calc_diff_rates(d, *cytokines)
+    p1, p2 = calc_probs(d, core, beta1, beta2, *cytokines)
     
     # check homeostasis conditions        
-    beta1_p = model(beta1_p, il2, myc, time, d)
-    beta2_p = model(beta2_p, il2, myc, time, d)
+    beta1_p = homeostasis_model(beta1_p, il2, myc, time, d)
+    beta2_p = homeostasis_model(beta2_p, il2, myc, time, d)
     lifetime_eff1 = d["lifetime_eff1"]
     lifetime_eff2 = d["lifetime_eff2"]
     
@@ -72,7 +70,7 @@ def th_cell_branch(th_state, time, model, d, core):
     return dt_state
 
 
-def assign_states(th_state, d, core):
+def get_cyto_producers(th_state, d, core):
     
     tnaive = th_state[0]
     # nstates depends on core function
@@ -87,15 +85,15 @@ def assign_states(th_state, d, core):
     n_th2_int = np.sum(th2)-n_th2 
     
     
-    states = tnaive, n_th1_int, n_th2_int, n_th1, n_th2
+    ifng_producers, il21_producers, il2_producers = tnaive, n_th1_int, n_th2_int
 
-    return states
+    return ifng_producers, il21_producers, il2_producers
 
 
-def calc_cytokines(d, il2_producers, n_th1, n_th2):
-    ifng = d["rate_ifng"]*n_th1 + d["ifng_ext"]
-    il21 = d["rate_il21"]*n_th2 + d["il21_ext"]
-    il2 = d["rate_il2"]*il2_producers+d["il2_ext"]
+def calc_cytokines(d, ifng_producers, il21_producers, il2_producers):
+    ifng = d["rate_ifng"]*ifng_producers + d["ifng_ext"]
+    il21 = d["rate_il21"]*il21_producers + d["il21_ext"]
+    il2 = d["rate_il2"]*il2_producers + d["il2_ext"]
     
     # make sure no cytokine concentration below 0
     cytokines = np.array([ifng, il21, il2])
@@ -103,7 +101,7 @@ def calc_cytokines(d, il2_producers, n_th1, n_th2):
     return cytokines
 
 
-def calc_diff_rates(ifng, il21, il2, d):
+def calc_diff_rates(d, ifng, il21, il2):
 
     fb_ifn = (d["fb_rate_ifng"]*ifng+d["K_ifng"]) / (ifng+d["K_ifng"])
     fb_il21 = (d["fb_rate_il21"]*il21+d["K_il21"]) / (il21+d["K_il21"])
@@ -117,7 +115,7 @@ def calc_diff_rates(ifng, il21, il2, d):
     return beta1, beta2
 
     
-def calc_prolif_rates(ifng, il21, il2, d):
+def calc_prolif_rates(d, ifng, il21, il2):
 
     fb_ifn = (d["fb_prolif_ifng"]*ifng+d["K_ifng"]) / (ifng+d["K_ifng"])
     fb_il21 = (d["fb_prolif_il21"]*il21+d["K_il21"]) / (il21+d["K_il21"])
@@ -131,7 +129,7 @@ def calc_prolif_rates(ifng, il21, il2, d):
     return beta1_p, beta2_p
 
 
-def calc_probs(ifng, il21, il2, beta1, beta2, d, core):
+def calc_probs(d, beta1, beta2, core, ifng, il21, il2):
     p1_norm = 1.0
     p2_norm = 1.0
 
@@ -155,7 +153,8 @@ def calc_probs(ifng, il21, il2, beta1, beta2, d, core):
     return p1_norm, p2_norm
 
 
-def differentiate(th_state, core, beta1, beta2, beta1_p, beta2_p, p1, p2, death1, death2, d):
+def differentiate(th_state, core, beta1, beta2, beta1_p, beta2_p, p1, p2, 
+                  death1, death2, d):
     
     tnaive = th_state[0]
     
@@ -167,12 +166,9 @@ def differentiate(th_state, core, beta1, beta2, beta1_p, beta2_p, p1, p2, death1
     	dt_th0 = -d["decision_time"]*tnaive
     	n_states = 1
 
-    th1 = th_state[1:(d["alpha1"]+d["alpha1_p"]+n_states)]
-    # add -1 because of myc
-    th2 = th_state[(d["alpha1"]+d["alpha1_p"]+n_states):-1]     
-    #th1 = th1[-d["alpha1_p"]:]
-    #th2 = th2[-d["alpha2_p"]:] 
-
+    idx = (d["alpha1"]+d["alpha1_p"]+n_states)
+    th1 = th_state[1:idx]
+    th2 = th_state[idx:]
     dt_th1 = core(th1, tnaive, d["alpha1"], beta1, beta1_p, death1, p1, d)
     dt_th2 = core(th2, tnaive, d["alpha2"], beta2, beta2_p, death2, p2, d)
 
@@ -180,6 +176,39 @@ def differentiate(th_state, core, beta1, beta2, beta1_p, beta2_p, p1, p2, death1
     
     return dt_state
 
+
+
+def naive_diff_prec(naive_arr, d):
+    dt_state = np.zeros_like(naive_arr)    
+    for i in range(len(naive_arr)):
+        if i == 0:
+            dt_state[i] = -d["beta_prec"]*naive_arr[i]
+        else:
+            dt_state[i] = d["beta_prec"]*(naive_arr[i-1]-naive_arr[i])
+
+    return dt_state
+
+
+def prec_diff_eff(prec_arr, influx, beta_p_prec, prob_prec, d):
+    dt_state = np.zeros_like(prec_arr)
+    for i in range(len(prec_arr)):
+        if i == 0:
+            dt_state[i] = influx - d["beta_eff"]*prec_arr[i] + 2*beta_p_prec*prob_prec*prec_arr[i-1]
+        else:
+            dt_state[i] = d["beta_eff"]*(prec_arr[i-1]-prec_arr[i])
+
+    return dt_state
+
+
+def eff_prolif(eff_arr, influx, beta_p, death):
+    dt_state = np.zeros_like(eff_arr)
+    for i in range(len(eff_arr)):
+        if i == 0:
+            dt_state[i] = influx - (beta_p-death)*eff_arr[i] + 2*beta_p*eff_arr[-1]
+        else:
+            dt_state[i] = (beta_p-death) * (eff_arr[i-1]-eff_arr[i])
+    
+    return dt_state
 
 def branch_competetive(state, th0, alpha, beta, beta_p, death, p, d):
     """
