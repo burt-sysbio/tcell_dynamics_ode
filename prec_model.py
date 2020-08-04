@@ -207,15 +207,16 @@ class Simulation:
         df_th1 = df[df.cell_type == "th1"]
         df_tfh = df[df.cell_type == "tfh"]
 
-        df_th1 = self.get_readouts_from_df(df_th1, "th1")
-        df_tfh = self.get_readouts_from_df(df_tfh, "tfh")
-        
+        df_th1 = self.get_readouts_from_df(df_th1)
+        df_th1["name"] = "th1"
+        df_tfh = self.get_readouts_from_df(df_tfh)
+        df_tfh["name"] = "tfh"
         df = pd.concat([df_th1, df_tfh])
 
         return df
         
     
-    def get_readouts_from_df(self, state, name):
+    def get_readouts_from_df(self, state):
         # get readouts
         peak = readouts.get_peak(state.time, state.cells)
         area = readouts.get_area(state.time, state.cells)
@@ -225,12 +226,8 @@ class Simulation:
         reads = [peak, area, tau, decay]
 
         read_names = ["peak", "area", "tau", "decay"]
-        data = {"readout" : read_names, "readout_val" : reads}
-        reads_df = pd.DataFrame(data = data)
-
-        # assign cell type to data frame
-        reads_df["cell_type"] = name
-        
+        reads_df = pd.DataFrame(data = np.array([reads]), columns = read_names)
+     
         return reads_df
     
 
@@ -265,12 +262,11 @@ class Simulation:
         # set the parameter name to the first variable name. in case of multiple
         # variables this is not true
         df["param_name"] = keys[0]
-        df["simulation_name"] = self.name
+        df["sim_name"] = self.name
         
         self.parameters = old_parameters
         
         return df
-    
 
 
     def get_relative_readouts(self, df):
@@ -278,17 +274,33 @@ class Simulation:
         split readout data frame based on cell types, then compute relative readouts
         """
         # need to get copy otherwise view is returned if I index like this
-        df_th1 = df[df.cell_type == "th1"].copy()
-        df_tfh = df[df.cell_type == "tfh"].copy()
-        
+        df_th1 = df[df.name == "th1"].copy()
+        df_tfh = df[df.name == "tfh"].copy()
+        df_th1 = df_th1.reset_index(drop = True)
+        df_tfh = df_tfh.reset_index(drop = True)
+
+        # take only readout values (first four columns) and divide
+        df_rel = df_th1.iloc[:,:4] / df_tfh.iloc[:,:4]
+        # add other columns (same for th1 and tfh df)
+        df_rel["param_val"] = df_th1.param_val
+        df_rel["param_name"] = df_th1.param_name
+        df_rel["sim_name"] = df_th1.sim_name
         # get total area
-        # compute the relative readouts (division)
-        rel_readout = df_th1.readout_val.values / df_tfh.readout_val.values
-        df_th1["rel_readout"] = rel_readout
-        df_th1 = df_th1.drop(columns = ["cell_type", "readout_val"])
+        # compute the
+        return df_rel
+    
+    
+    def normalize_readout_df(self, df, norm_idx):
+        df_th1 = df[df.name == "th1"].copy()
+        df_tfh = df[df.name == "tfh"].copy()
+        df_th1 = df_th1.reset_index(drop = True)
+        df_tfh = df_tfh.reset_index(drop = True)
         
-        return df_th1
-    
-    
-    def normalize_readout_df(self):
-        return None
+        cols = ["peak", "area", "tau", "decay", "param_val"]
+        # divide each readout column and parameter val column by row that corresponds to norm idx
+        df_norm = df_th1.loc[:,cols] / df_th1.loc[norm_idx,cols]
+        df_norm2 = df_tfh.loc[:,cols] / df_tfh.loc[norm_idx,cols]        
+        df = pd.concat([df_norm, df_norm2])
+        df["sim_name"] = df_th1.sim_name[0]
+        df["param_name"] = df_th1.param_name[0]
+        return df

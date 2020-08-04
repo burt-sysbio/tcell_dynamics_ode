@@ -51,5 +51,6 @@ g = sns.relplot(data = df, x = "time", y = "cells", hue = "cell_type", kind = "l
 
 arr_dict = {"fb_ifng_prob_th1" : np.geomspace(0.1,10,50)}
 df = sim.vary_param(arr_dict)
-
 df2 = sim.get_relative_readouts(df)
+
+df3 = sim.normalize_readout_df(df, norm_idx = 49)
