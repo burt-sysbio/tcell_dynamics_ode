@@ -198,14 +198,19 @@ class Simulation:
 
 
     def get_readouts(self):
-        state = self.run_timecourse()
-        df_th1 = state[state.cell_type == "th1"]
-        df_th2 = state[state.cell_type == "th2"]
+        """
+        run time course and get readouts for each effector cell
+        return dataframe
+        df : dataframe
+        """
+        df = self.run_timecourse()
+        df_th1 = df[df.cell_type == "th1"]
+        df_tfh = df[df.cell_type == "tfh"]
 
         df_th1 = self.get_readouts_from_df(df_th1, "th1")
-        df_th2 = self.get_readouts_from_df(df_th2, "th2")
+        df_tfh = self.get_readouts_from_df(df_tfh, "tfh")
         
-        df = pd.concat([df_th1, df_th2])
+        df = pd.concat([df_th1, df_tfh])
 
         return df
         
@@ -261,82 +266,29 @@ class Simulation:
         # variables this is not true
         df["param_name"] = keys[0]
         df["simulation_name"] = self.name
-        df["regulation"] = self.mode.__name__
         
         self.parameters = old_parameters
         
         return df
     
-    
-    def vary_param_norm(self, arr_dict, norm_val, norm_idx):
-        """
-        vary parameters and then normalize either to beginning or middle and take log
-        """
-        arr_dict = dict(arr_dict)
-        df = self.vary_param(arr_dict)
-        
-        # normalize
-        df["param_val_norm"] = df["param_val"] / norm_val
-        
-        # get readouts for only for normalized arr value 
-        for key in arr_dict:
-            val = arr_dict[key][norm_idx]
-            arr_dict[key] = [val]
-        df_norm = self.vary_param(arr_dict)
-        
-        # merge these readouts to original data frame
-        df_norm = df_norm[["readout", "readout_val", "cell_type"]]
-        df_norm = df_norm.rename(columns = {"readout_val" : "norm_readout"})
-        df = df.merge(df_norm, on = ["readout", "cell_type"], how = "left")
-        
-        # get effect size
-        logseries = df["readout_val"]/df["norm_readout"]
-        logseries = logseries.astype(float)
-        df["effect_size"] = np.log2(logseries)
-        #df["simulation_name"] = self.name
-        
-        return df
 
 
     def get_relative_readouts(self, df):
-
+        """
+        split readout data frame based on cell types, then compute relative readouts
+        """
         # need to get copy otherwise view is returned if I index like this
         df_th1 = df[df.cell_type == "th1"].copy()
-        df_th2 = df[df.cell_type == "th2"].copy()
+        df_tfh = df[df.cell_type == "tfh"].copy()
         
         # get total area
         # compute the relative readouts (division)
-        rel_readout = df_th1.readout_val.values / df_th2.readout_val.values
+        rel_readout = df_th1.readout_val.values / df_tfh.readout_val.values
         df_th1["rel_readout"] = rel_readout
-        df_th1 = df_th1.drop(columns = ["cell_type", "readout_val", "norm_readout"])
+        df_th1 = df_th1.drop(columns = ["cell_type", "readout_val"])
         
         return df_th1
     
     
-    def vary_param_rel(self, arr_dict, norm_val, norm_idx):
-        df = self.vary_param_norm(arr_dict, norm_val, norm_idx)
-        
-        # get readouts of norm condition
-        df = df.drop(columns = ["effect_size"])
-        df_norm = df.loc[df["norm_readout"] == df["readout_val"]]
-        
-        # get relative readouts of norm condition
-        rel_readouts = self.get_relative_readouts(df_norm)
-
-        # rename to later merge to original df
-        rel_readouts = rel_readouts.rename(columns = {"rel_readout" : "rel_readout_norm"})
-
-        #compute relative readouts for whole data frame
-        df = self.get_relative_readouts(df)
-
-        # only keep two columns to facilitate merge then merge with original rel readout df
-        rel_readouts = rel_readouts[["readout", "rel_readout_norm"]]
-        df = pd.merge(df, rel_readouts, how = "left")
-        
-        # compute effect size
-        logseries = df["rel_readout"]/df["rel_readout_norm"]
-        logseries = logseries.astype(float)
-        df["effect_size"] = np.log2(logseries)
-        
-        return df
-    
+    def normalize_readout_df(self):
+        return None

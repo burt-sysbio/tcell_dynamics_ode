@@ -21,8 +21,8 @@ d = {
      "alpha_tfh": 2,
      "beta_naive" : 10,
      "beta_prec" : 2,
-     "beta_p_th1" : 10,
-     "beta_p_tfh" : 10,
+     "beta_p_th1" : 2,
+     "beta_p_tfh" : 2,
      "n_div_eff" : 1,
      "n_div_prec" : 1.,
      "death_th1" : 2,
@@ -47,5 +47,9 @@ sim.run_timecourse()
 
 
 df = sim.state_tidy
-
 g = sns.relplot(data = df, x = "time", y = "cells", hue = "cell_type", kind = "line")
+
+arr_dict = {"fb_ifng_prob_th1" : np.geomspace(0.1,10,50)}
+df = sim.vary_param(arr_dict)
+
+df2 = sim.get_relative_readouts(df)
