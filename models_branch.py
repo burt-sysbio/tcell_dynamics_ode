@@ -153,22 +153,26 @@ def calc_probs(d, beta1, beta2, core, ifng, il21, il2):
     return p1_norm, p2_norm
 
 
-def differentiate(th_state, core, beta1, beta2, beta1_p, beta2_p, p1, p2, 
+
+
+
+def differentiate(state, core, beta1, beta2, beta1_p, beta2_p, p1, p2, 
                   death1, death2, d):
     
-    tnaive = th_state[0]
-    
+    tnaive = state[0]
+     
     # in precursor model beta is adjusted by probability term
     if core.__name__ == "branch_competetive":
     	dt_th0 = -(beta1+beta2)*tnaive
     	n_states = 0
-    if core.__name__ == "branch_precursor":
+    else:
     	dt_th0 = -d["decision_time"]*tnaive
     	n_states = 1
 
+
     idx = (d["alpha1"]+d["alpha1_p"]+n_states)
-    th1 = th_state[1:idx]
-    th2 = th_state[idx:]
+    th1 = state[1:idx]
+    th2 = state[idx:]
     dt_th1 = core(th1, tnaive, d["alpha1"], beta1, beta1_p, death1, p1, d)
     dt_th2 = core(th2, tnaive, d["alpha2"], beta2, beta2_p, death2, p2, d)
 
@@ -177,38 +181,6 @@ def differentiate(th_state, core, beta1, beta2, beta1_p, beta2_p, p1, p2,
     return dt_state
 
 
-
-def naive_diff_prec(naive_arr, d):
-    dt_state = np.zeros_like(naive_arr)    
-    for i in range(len(naive_arr)):
-        if i == 0:
-            dt_state[i] = -d["beta_prec"]*naive_arr[i]
-        else:
-            dt_state[i] = d["beta_prec"]*(naive_arr[i-1]-naive_arr[i])
-
-    return dt_state
-
-
-def prec_diff_eff(prec_arr, influx, beta_p_prec, prob_prec, d):
-    dt_state = np.zeros_like(prec_arr)
-    for i in range(len(prec_arr)):
-        if i == 0:
-            dt_state[i] = influx - d["beta_eff"]*prec_arr[i] + 2*beta_p_prec*prob_prec*prec_arr[i-1]
-        else:
-            dt_state[i] = d["beta_eff"]*(prec_arr[i-1]-prec_arr[i])
-
-    return dt_state
-
-
-def eff_prolif(eff_arr, influx, beta_p, death):
-    dt_state = np.zeros_like(eff_arr)
-    for i in range(len(eff_arr)):
-        if i == 0:
-            dt_state[i] = influx - (beta_p-death)*eff_arr[i] + 2*beta_p*eff_arr[-1]
-        else:
-            dt_state[i] = (beta_p-death) * (eff_arr[i-1]-eff_arr[i])
-    
-    return dt_state
 
 def branch_competetive(state, th0, alpha, beta, beta_p, death, p, d):
     """
