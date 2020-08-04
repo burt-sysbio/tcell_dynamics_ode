@@ -7,6 +7,18 @@ Created on Tue Aug  4 09:56:14 2020
 import numpy as np
 from scipy.integrate import odeint
 import pandas as pd
+import readout_module as readouts
+
+
+def pos_fb(x, EC50, hill = 3):
+    out = x**hill / (x**hill + EC50**hill)
+    return out
+
+
+
+def prob_fb(x, fc, EC50, hill = 3):
+    out = (fc*x**hill + EC50**hill) / (x**hill + EC50**hill)
+    return out
 
 def prec_model(state, time, d):
     
@@ -24,18 +36,37 @@ def prec_model(state, time, d):
     th1_arr = state[(i_naive+i_prec):(i_naive+i_prec+i_th1)]
     tfh_arr = state[(i_naive+i_prec+i_th1):]
     
+    prec, th1, tfh = [np.sum(cell) for cell in [prec_arr, th1_arr, tfh_arr]]
+
+    ifng = d["r_ifng"]*th1
+    il21 = d["r_il21"]*tfh
+    
+    p_th1 = d["p_th1"]*prob_fb(ifng, d["fb_ifng_prob_th1"], d["EC50_ifng_prob_th1"])
+    p_tfh = d["p_tfh"]*prob_fb(il21, d["fb_il21_prob_tfh"], d["EC50_il21_prob_tfh"])
+    
+    
+    
+    p_norm = p_th1+p_tfh
+    p_th1 = p_th1/p_norm * (1-d["p_prec"])
+    p_tfh = p_tfh/p_norm * (1-d["p_prec"])
+    
+    
     # calculate influx
     influx_naive = 0
     influx_prec = naive_arr[-1]*d["beta_naive"]
     influx_th1 = prec_arr[-1]*d["beta_prec"]*d["p_th1"]
     influx_tfh = prec_arr[-1]*d["beta_prec"]*d["p_tfh"]
     
+    beta_p_th1 = d["beta_p_th1"]*pos_fb(myc, d["EC50_myc"]) # add prolif feedback here
+    beta_p_tfh = d["beta_p_tfh"]*pos_fb(myc, d["EC50_myc"]) # add prolif feedback here
+    #print(beta_p_th1)
+    
     dt_naive = diff_chain(naive_arr, influx_naive, d["beta_naive"], 0, 0, 0)
     dt_prec = diff_chain(prec_arr, influx_prec, d["beta_prec"], 0, d["p_prec"], d["n_div_prec"])
-    dt_th1 = diff_chain(th1_arr, influx_th1, d["beta_p_th1"], d["death_th1"], 1, d["n_div_eff"])
-    dt_tfh = diff_chain(tfh_arr, influx_tfh, d["beta_p_tfh"], d["death_tfh"], 1, d["n_div_eff"])
+    dt_th1 = diff_chain(th1_arr, influx_th1, beta_p_th1, d["death_th1"], 1, d["n_div_eff"])
+    dt_tfh = diff_chain(tfh_arr, influx_tfh, beta_p_tfh, d["death_tfh"], 1, d["n_div_eff"])
 
-    d_myc = -(1./d["lifetime_myc"])*myc
+    d_myc = -d["deg_myc"]*myc
     dt_state = np.concatenate((dt_naive, dt_prec, dt_th1, dt_tfh, [d_myc]))
     
     return dt_state
@@ -69,9 +100,9 @@ def diff_chain(state, influx, beta, death, prob, n_div):
     dt_state = np.zeros_like(state)
     for i in range(len(state)):
         if i == 0:
-            dt_state[i] = influx - (beta-death)*state[i] + 2*n_div*beta*prob*state[-1]
+            dt_state[i] = influx - (beta+death)*state[i] + 2*n_div*beta*prob*state[-1]
         else:
-            dt_state[i] = (beta-death) * (state[i-1]-state[i])
+            dt_state[i] = beta*state[i-1] - (beta+death)*state[i]
     
     return dt_state
 
@@ -79,7 +110,7 @@ def diff_chain(state, influx, beta, death, prob, n_div):
 
 class Simulation:
         
-    def __init__(self, name, model, parameters, cell_types, time):
+    def __init__(self, name, model, parameters, celltypes, time):
         self.name = name
         self.model = model
         self.parameters = dict(parameters)
@@ -87,7 +118,8 @@ class Simulation:
         self.state_raw = None
         self.state = None
         self.state_tidy = None
-        self.cell_types = cell_types
+        self.celltypes = celltypes
+        self.molecules = None
    
         
     def init_model(self):
@@ -126,6 +158,14 @@ class Simulation:
         return cells    
 
 
+    def get_molecules(self):
+        state = self.state_raw
+        myc = state[:,-1]
+        df = pd.DataFrame({"time" : self.time, "myc" : myc})
+        self.molecules = df
+        return df
+    
+
     def run_ode(self):
         #print("running time course simulation..")
         
@@ -139,11 +179,12 @@ class Simulation:
     
     
     def run_timecourse(self):
-        state_raw = self.run_ode()
-        cells = self.get_cells()
+        self.run_ode()
+        self.get_cells()
+        self.get_molecules()
         
-        colnames = self.cell_types
-        df = pd.DataFrame(cells, columns = colnames)
+        colnames = self.celltypes
+        df = pd.DataFrame(self.state, columns = colnames)
        	
         df["time"] = self.time
         df["sim_name"] = self.name
@@ -298,3 +339,4 @@ class Simulation:
         df["effect_size"] = np.log2(logseries)
         
         return df
+    
