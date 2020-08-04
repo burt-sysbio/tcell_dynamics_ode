@@ -134,7 +134,7 @@ class Simulation:
     
         # normalize cell area
         if normalize == True:
-            area = np.trapz(df.cells.array, time)
+            area = np.trapz(df.cells.array, self.time)
             df.cells = df.cells.div(area) 
   
         # change this to modelname if you want to compare menten and thres
