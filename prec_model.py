@@ -6,9 +6,10 @@ Created on Tue Aug  4 09:56:14 2020
 """
 import numpy as np
 from scipy.integrate import odeint
+import seaborn as sns
 import pandas as pd
 import readout_module as readouts
-
+import matplotlib
 
 def pos_fb(x, EC50, hill = 3):
     out = x**hill / (x**hill + EC50**hill)
@@ -136,6 +137,20 @@ class Simulation:
         
         return y0
     
+    def get_rel_cells(self):
+        """
+        cells needs to be tidy data frame
+        add new column to cells df which gives percentage of total cells
+        """
+        df = self.run_timecourse()
+        df_th1 = df[df.cell_type == "th1"]
+        df_tfh = df[df.cell_type == "tfh"]
+        df_th1 = df_th1.reset_index(drop = True)
+        df_tfh = df_tfh.reset_index(drop = True)
+        df_tfh["total"] = df_th1.cells + df_tfh.cells
+        df_tfh["rel_cells"] = (df_tfh.cells / df_tfh.total)*100
+        #add total cells and compute relative cell fractions      
+        return df_tfh
     
     def get_cells(self):
         state = self.state_raw
@@ -232,6 +247,20 @@ class Simulation:
         
     
     def get_readouts_from_df(self, state):
+        """
+        run simulation and then get readouts
+
+        Parameters
+        ----------
+        state : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        reads_df : TYPE
+            DESCRIPTION.
+
+        """
         # get readouts
         peak = readouts.get_peak(state.time, state.cells)
         area = readouts.get_area(state.time, state.cells)
@@ -248,9 +277,12 @@ class Simulation:
 
     def vary_param(self, arr_dict):
         """
-        vary parameter and compute readouts for both cells
+        vary parameters and compute readouts for both cells
         provide dict with var names and corresponding arrays to be varied at
         the same time. arrays should have same length
+        arr_dict: dictionary
+        should contain parameter name and corresponding array as value
+        all parameters in dict are varied at the same time
         """
         arr_dict = dict(arr_dict)
         old_parameters = dict(self.parameters)
@@ -299,23 +331,107 @@ class Simulation:
         # add other columns (same for th1 and tfh df)
         df_rel["param_val"] = df_th1.param_val
         df_rel["param_name"] = df_th1.param_name
-        df_rel["sim_name"] = df_th1.sim_name
+        df_rel["sim_name"] = self.name
         # get total area
         # compute the
         return df_rel
     
     
     def normalize_readout_df(self, df, norm_idx):
-        df_th1 = df[df.name == "th1"].copy()
-        df_tfh = df[df.name == "tfh"].copy()
-        df_th1 = df_th1.reset_index(drop = True)
-        df_tfh = df_tfh.reset_index(drop = True)
-        
+        """
+        take either relative or normal readout data frame and readouts and param value
+        by row corresponding to norm_idx
+        """
         cols = ["peak", "area", "tau", "decay", "param_val"]
+        
+        if "name" in df.columns:
+            df_th1 = df[df.name == "th1"].copy()
+            df_tfh = df[df.name == "tfh"].copy()
+            df_th1 = df_th1.reset_index(drop = True)
+            df_tfh = df_tfh.reset_index(drop = True)
+        
         # divide each readout column and parameter val column by row that corresponds to norm idx
-        df_norm = df_th1.loc[:,cols] / df_th1.loc[norm_idx,cols]
-        df_norm2 = df_tfh.loc[:,cols] / df_tfh.loc[norm_idx,cols]        
-        df = pd.concat([df_norm, df_norm2])
-        df["sim_name"] = df_th1.sim_name[0]
-        df["param_name"] = df_th1.param_name[0]
+            df_norm = df_th1.loc[:,cols] / df_th1.loc[norm_idx,cols]
+            df_norm["name"] = "th1"
+            df_norm2 = df_tfh.loc[:,cols] / df_tfh.loc[norm_idx,cols]        
+            df_norm2["name"] = "tfh"
+            out = pd.concat([df_norm, df_norm2])
+        
+        else:
+            out = df.loc[:,cols] / df.loc[norm_idx, cols]
+            out["sim_name"] = self.name
+            out["param_name"] = df.param_name[0]
+
+        return out
+    
+
+    def run_timecourses(self, arr_dict):
+        """
+        run multiple time courses, vary parameter and save relative cells (tfh%total incl parameter value)
+
+        Parameters
+        ----------
+        arr_dict
+
+        Returns
+        -------
+        df : TYPE
+            DESCRIPTION.
+
+        """
+        old_parameters = dict(self.parameters)
+        df_list = []
+        values = list(arr_dict.values())
+        keys = list(arr_dict.keys())
+        for val in zip(*values):
+            for key, v in zip(keys, val):
+                self.parameters[key] = v
+
+            df = self.get_rel_cells()
+            df["pval"] = val[0]
+            df_list.append(df)
+        
+        df = pd.concat(df_list)
+        
+        self.parameters = old_parameters
         return df
+    
+
+    def plot_timecourses(self, df, log = False, cbar_label = "feedback strength"):
+        """
+
+        Parameters
+        ----------
+        df : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
+        # parameter for scaling of color palette in sns plot
+        arr = df.loc[:,["pval"]]
+        vmin = np.min(arr)
+        vmax = np.max(arr)
+        if log == True:
+
+            norm = matplotlib.colors.LogNorm(vmin = vmin, vmax = vmax)
+            # if log then also in sns plot
+        else:
+            norm = matplotlib.colors.Normalize(vmin = vmin, vmax = vmax)  
+        
+        # make mappable for colorbar
+        cmap = "Blues"
+        sm = matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm)
+        sm.set_array([])        
+        
+        # set hue to parameter name 
+        g = sns.relplot(x = "time", y = "rel_cells", kind = "line", data = df, hue = "pval", 
+                        hue_norm = norm, palette = cmap, legend = False)
+
+
+        g.set(ylim = (0,100), ylabel = "Tfh % of total")
+        cbar = g.fig.colorbar(sm)
+        # add colorbar       
+        cbar.set_label(cbar_label)

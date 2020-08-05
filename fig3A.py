@@ -71,8 +71,8 @@ df = pd.concat([sim_rate.state_tidy, sim_rtm.state_tidy])
 g = sns.relplot(data = df, x = "time", y = "cells", hue = "cell_type", kind = "line",
                 row = "sim_name")
 
-arr_dict = {"fb_ifng_prob_th1" : np.geomspace(1,100,50), 
-            "fb_il21_prob_th1" : np.geomspace(1,100,50)}
+arr_dict = {"fb_ifng_prob_th1" : np.geomspace(1,10,50), 
+            "fb_il21_prob_th1" : np.geomspace(1,10,50)}
 
 # vary parameters
 df = sim_rate.vary_param(arr_dict)

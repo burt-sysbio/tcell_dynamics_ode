@@ -24,7 +24,7 @@ d = {
      "beta_p_th1" : 40,
      "beta_p_tfh" : 40,
      "n_div_eff" : 1,
-     "n_div_prec" : 2.0,
+     "n_div_prec" : 2.5,
      "death_th1" : 2,
      "death_tfh" : 2,
      "p_th1" : 0.6,
@@ -33,7 +33,7 @@ d = {
      "deg_myc" : 0.1,
      "EC50_myc" : 0.5,
      "fb_ifng_prob_th1" : 1,
-     "fb_il10_prob_th1" : 0.1,
+     "fb_il10_prob_th1" : 1.0,
      "fb_il21_prob_tfh" : 1,
      "EC50_ifng_prob_th1" : 1.,
      "EC50_il10_prob_th1" : 0.1,
@@ -57,8 +57,6 @@ g = sns.relplot(data = df, x = "time", y = "cells", hue = "cell_type", kind = "l
 
 df2 = sim.molecules_tidy
 g = sns.relplot(data = df2, x = "time", y = "conc.", hue = "molecule", kind = "line")
-#arr_dict = {"fb_ifng_prob_th1" : np.geomspace(0.1,10,50)}
-#df = sim.vary_param(arr_dict)
-#df2 = sim.get_relative_readouts(df)
 
-#df3 = sim.normalize_readout_df(df, norm_idx = 49)
+arr_dict = {"fb_ifng_prob_th1" : np.geomspace(1,100,50), 
+            "fb_il21_prob_th1" : np.geomspace(1,100,50)}
