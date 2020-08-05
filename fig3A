@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Aug  5 13:49:43 2020
+
+@author: burt
+
+create figure with 2 pos feedback and different init probs 
+then vary feedback strength
+do this for alpha = 1 and alpha = 10
+"""

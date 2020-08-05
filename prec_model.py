@@ -22,8 +22,8 @@ def prob_fb(x, fc, EC50, hill = 3):
 
 def prec_model(state, time, d):
     
-    myc = state[-1]
-    state = state[:-1]      
+    myc, ifng, il21, il10 = state[-4:]
+    state = state[:-4]      
     i_naive = d["alpha_naive"]
     i_prec = d["alpha_prec"]
     i_th1 = d["alpha_th1"]
@@ -37,25 +37,25 @@ def prec_model(state, time, d):
     tfh_arr = state[(i_naive+i_prec+i_th1):]
     
     prec, th1, tfh = [np.sum(cell) for cell in [prec_arr, th1_arr, tfh_arr]]
-
-    ifng = d["r_ifng"]*th1
-    il21 = d["r_il21"]*tfh
+    dt_myc = -d["deg_myc"]*myc
+    dt_ifng = d["r_ifng"]*th1 - d["deg_ifng"]*ifng
+    dt_il21 = d["r_il21"]*tfh - d["deg_il21"]*il21
+    dt_il10 = d["r_il10"]*tfh - d["deg_il10"]*il10
+    dt_molecules = [dt_myc, dt_ifng, dt_il21, dt_il10]
+ 
     
-    p_th1 = d["p_th1"]*prob_fb(ifng, d["fb_ifng_prob_th1"], d["EC50_ifng_prob_th1"])
+    p_th1 = d["p_th1"]*prob_fb(ifng, d["fb_ifng_prob_th1"], d["EC50_ifng_prob_th1"])*prob_fb(il10, d["fb_il10_prob_th1"], d["EC50_il10_prob_th1"])
     p_tfh = d["p_tfh"]*prob_fb(il21, d["fb_il21_prob_tfh"], d["EC50_il21_prob_tfh"])
-    
-    
     
     p_norm = p_th1+p_tfh
     p_th1 = p_th1/p_norm * (1-d["p_prec"])
     p_tfh = p_tfh/p_norm * (1-d["p_prec"])
-    
-    
+
     # calculate influx
     influx_naive = 0
     influx_prec = naive_arr[-1]*d["beta_naive"]
-    influx_th1 = prec_arr[-1]*d["beta_prec"]*d["p_th1"]
-    influx_tfh = prec_arr[-1]*d["beta_prec"]*d["p_tfh"]
+    influx_th1 = prec_arr[-1]*d["beta_prec"]*p_th1
+    influx_tfh = prec_arr[-1]*d["beta_prec"]*p_tfh
     
     beta_p_th1 = d["beta_p_th1"]*pos_fb(myc, d["EC50_myc"]) # add prolif feedback here
     beta_p_tfh = d["beta_p_tfh"]*pos_fb(myc, d["EC50_myc"]) # add prolif feedback here
@@ -66,8 +66,8 @@ def prec_model(state, time, d):
     dt_th1 = diff_chain(th1_arr, influx_th1, beta_p_th1, d["death_th1"], 1, d["n_div_eff"])
     dt_tfh = diff_chain(tfh_arr, influx_tfh, beta_p_tfh, d["death_tfh"], 1, d["n_div_eff"])
 
-    d_myc = -d["deg_myc"]*myc
-    dt_state = np.concatenate((dt_naive, dt_prec, dt_th1, dt_tfh, [d_myc]))
+
+    dt_state = np.concatenate((dt_naive, dt_prec, dt_th1, dt_tfh, dt_molecules))
     
     return dt_state
 
@@ -120,36 +120,36 @@ class Simulation:
         self.state_tidy = None
         self.celltypes = celltypes
         self.molecules = None
+        self.molecules_tidy = None
+        self.molecule_names = ["myc", "IFNg", "IL21", "IL10"]
+        self.n_molecules = 4 # myc and 3 cytokines
    
         
     def init_model(self):
         # need additional slot for myc ode
-        myc = 1
         d = self.parameters
         
-        y0 = np.zeros(d["alpha_naive"]+d["alpha_prec"]+d["alpha_th1"]+d["alpha_tfh"]+myc)      
+        y0 = np.zeros(d["alpha_naive"]+d["alpha_prec"]+d["alpha_th1"]+d["alpha_tfh"]+self.n_molecules)      
         y0[0] = 1.       
         # init myc concentration
-        y0[-1] = 1.
+        y0[-4] = 1.
         
         return y0
     
     
     def get_cells(self):
         state = self.state_raw
+        state = state[:,:-self.n_molecules]
         d = self.parameters
         i_naive = d["alpha_naive"]
         i_prec = d["alpha_prec"]
         i_th1 = d["alpha_th1"]
-        i_tfh = d["alpha_tfh"]
-       
+      
         # split state arr into different cell types
         naive_arr = state[:,:i_naive]
         prec_arr = state[:,i_naive:(i_naive+i_prec)]
         th1_arr = state[:,(i_naive+i_prec):(i_naive+i_prec+i_th1)]
-        # add -1 because of myc
-        tfh_arr = state[:,(i_naive+i_prec+i_th1):-1]
-        
+        tfh_arr = state[:,(i_naive+i_prec+i_th1):]
         cells = [naive_arr, prec_arr, th1_arr, tfh_arr]
         cells = [np.sum(cell, axis = 1) for cell in cells]
         cells = np.stack(cells, axis = -1)
@@ -159,16 +159,31 @@ class Simulation:
 
 
     def get_molecules(self):
+        """
+        from raw data get molecules and convert to data frame
+        Returns
+        -------
+        df : data frame
+            cytokines and other molecules over time
+        """
         state = self.state_raw
-        myc = state[:,-1]
-        df = pd.DataFrame({"time" : self.time, "myc" : myc})
+        arr = state[:,-self.n_molecules:]
+        df = pd.DataFrame(data = arr, columns = self.molecule_names)
+        df["time"] = self.time
+        df_tidy = pd.melt(df, id_vars = ["time"], value_name = "conc.", var_name = "molecule")
         self.molecules = df
+        self.molecules_tidy = df_tidy
         return df
     
 
     def run_ode(self):
-        #print("running time course simulation..")
-        
+        """
+        run ode and store as raw data, incl cells and molecules
+        Returns
+        -------
+        state : data frame
+            raw simulation data
+        """
         y0 = self.init_model()
         d = dict(self.parameters)
         time = self.time
