@@ -23,8 +23,12 @@ def prob_fb(x, fc, EC50, hill = 3):
 
 def prec_model(state, time, d):
     
-    myc, ifng, il21, il10 = state[-4:]
-    state = state[:-4]      
+    n_molecules = 4
+    n_memory = 2
+    myc, ifng, il21, il10 = state[-n_molecules:]
+    
+    # only keep state vector that contains response time arrays
+    state = state[:-(n_molecules+n_memory)]    
     i_naive = d["alpha_naive"]
     i_prec = d["alpha_prec"]
     i_th1 = d["alpha_th1"]
@@ -57,23 +61,27 @@ def prec_model(state, time, d):
     influx_prec = naive_arr[-1]*d["beta_naive"]
     influx_th1 = prec_arr[-1]*d["beta_prec"]*p_th1
     influx_tfh = prec_arr[-1]*d["beta_prec"]*p_tfh
+
     
     beta_p_th1 = d["beta_p_th1"]*pos_fb(myc, d["EC50_myc"]) # add prolif feedback here
     beta_p_tfh = d["beta_p_tfh"]*pos_fb(myc, d["EC50_myc"]) # add prolif feedback here
     #print(beta_p_th1)
     
-    dt_naive = diff_chain(naive_arr, influx_naive, d["beta_naive"], 0, 0, 0)
-    dt_prec = diff_chain(prec_arr, influx_prec, d["beta_prec"], 0, d["p_prec"], d["n_div_prec"])
-    dt_th1 = diff_chain(th1_arr, influx_th1, beta_p_th1, d["death_th1"], 1, d["n_div_eff"])
-    dt_tfh = diff_chain(tfh_arr, influx_tfh, beta_p_tfh, d["death_tfh"], 1, d["n_div_eff"])
+    dt_naive = diff_chain(naive_arr, influx_naive, d["beta_naive"], 0, 0, 0, 0)
+    dt_prec = diff_chain(prec_arr, influx_prec, d["beta_prec"], 0, 0, d["p_prec"], d["n_div_prec"])
+    dt_th1 = diff_chain(th1_arr, influx_th1, beta_p_th1, d["beta_m_th1"], d["death_th1"], 1, d["n_div_eff"])
+    dt_tfh = diff_chain(tfh_arr, influx_tfh, beta_p_tfh, d["beta_m_tfh"], d["death_tfh"], 1, d["n_div_eff"])
 
-
-    dt_state = np.concatenate((dt_naive, dt_prec, dt_th1, dt_tfh, dt_molecules))
+    # memory from total influx of th1 and tfh cells
+    dt_th1_mem = d["beta_m_th1"]*th1
+    dt_tfh_mem = d["beta_m_tfh"]*tfh
+    
+    dt_state = np.concatenate((dt_naive, dt_prec, dt_th1, dt_tfh, [dt_th1_mem], [dt_tfh_mem], dt_molecules))
     
     return dt_state
 
 
-def diff_chain(state, influx, beta, death, prob, n_div):
+def diff_chain(state, influx, beta, beta_m, death, prob, n_div):
     """
     Parameters
     ----------
@@ -101,9 +109,9 @@ def diff_chain(state, influx, beta, death, prob, n_div):
     dt_state = np.zeros_like(state)
     for i in range(len(state)):
         if i == 0:
-            dt_state[i] = influx - (beta+death)*state[i] + 2*n_div*beta*prob*state[-1]
+            dt_state[i] = influx - (beta+death+beta_m)*state[i] + 2*n_div*beta*prob*state[-1]
         else:
-            dt_state[i] = beta*state[i-1] - (beta+death)*state[i]
+            dt_state[i] = beta*state[i-1] - (beta+death+beta_m)*state[i]
     
     return dt_state
 
@@ -124,13 +132,13 @@ class Simulation:
         self.molecules_tidy = None
         self.molecule_names = ["myc", "IFNg", "IL21", "IL10"]
         self.n_molecules = 4 # myc and 3 cytokines
-   
+        self.n_memory = 2
         
     def init_model(self):
         # need additional slot for myc ode
         d = self.parameters
-        
-        y0 = np.zeros(d["alpha_naive"]+d["alpha_prec"]+d["alpha_th1"]+d["alpha_tfh"]+self.n_molecules)      
+
+        y0 = np.zeros(d["alpha_naive"]+d["alpha_prec"]+d["alpha_th1"]+d["alpha_tfh"]+self.n_molecules+self.n_memory)      
         y0[0] = 1.       
         # init myc concentration
         y0[-4] = 1.
@@ -154,19 +162,29 @@ class Simulation:
     
     def get_cells(self):
         state = self.state_raw
+        # first keep only state wo molecules
         state = state[:,:-self.n_molecules]
         d = self.parameters
         i_naive = d["alpha_naive"]
         i_prec = d["alpha_prec"]
         i_th1 = d["alpha_th1"]
-      
+        n_memory = self.n_memory
         # split state arr into different cell types
         naive_arr = state[:,:i_naive]
         prec_arr = state[:,i_naive:(i_naive+i_prec)]
         th1_arr = state[:,(i_naive+i_prec):(i_naive+i_prec+i_th1)]
-        tfh_arr = state[:,(i_naive+i_prec+i_th1):]
+        tfh_arr = state[:,(i_naive+i_prec+i_th1):-n_memory]
+        
+
         cells = [naive_arr, prec_arr, th1_arr, tfh_arr]
         cells = [np.sum(cell, axis = 1) for cell in cells]
+        
+        # get memory cells
+        th1_mem = state[:,-2]
+        tfh_mem = state[:,-1]
+
+        cells[2] = cells[2] + th1_mem
+        cells[3] = cells[3] + tfh_mem        
         cells = np.stack(cells, axis = -1)
         
         self.state = cells

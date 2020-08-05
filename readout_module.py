@@ -183,4 +183,5 @@ def check_criteria(cells):
     criteria = [crit1, crit2, crit3, crit4, crit5]
     crit = True if all(criteria) else False
 
+    crit = True
     return crit

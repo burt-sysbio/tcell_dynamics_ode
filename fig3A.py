@@ -28,6 +28,8 @@ d = {
      "beta_prec" : 10,
      "beta_p_th1" : 20,
      "beta_p_tfh" : 20,
+     "beta_m_th1" : 0.1,
+     "beta_m_tfh" : 0.1,
      "n_div_eff" : 1,
      "n_div_prec" : 1.,
      "death_th1" : 2,
