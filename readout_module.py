@@ -9,7 +9,7 @@ Created on Mon Aug  3 10:43:36 2020
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy import interpolate
-
+import warnings
 
 def get_maximum(x, y):
     """
@@ -184,4 +184,5 @@ def check_criteria(cells):
     crit = True if all(criteria) else False
 
     crit = True
+    warnings.warn("criteria for readout quality control disabled")
     return crit

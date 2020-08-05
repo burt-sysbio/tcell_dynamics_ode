@@ -5,7 +5,7 @@ Created on Wed Aug  5 13:49:43 2020
 
 @author: burt
 
-create figure with 2 pos feedback and different init probs 
+create figure with 1 neg feedback crosstalk and different init probs 
 then vary feedback strength
 do this for alpha = 1 and alpha = 10
 """
@@ -73,8 +73,7 @@ df = pd.concat([sim_rate.state_tidy, sim_rtm.state_tidy])
 g = sns.relplot(data = df, x = "time", y = "cells", hue = "cell_type", kind = "line",
                 row = "sim_name")
 
-arr_dict = {"fb_ifng_prob_th1" : np.geomspace(1,10,50), 
-            "fb_il21_prob_th1" : np.geomspace(1,10,50)}
+arr_dict = {"fb_il10_prob_th1" : np.geomspace(0.01,1,50)}
 
 # vary parameters
 df = sim_rate.vary_param(arr_dict)
