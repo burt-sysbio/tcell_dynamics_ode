@@ -157,7 +157,7 @@ def get_il2(il2_producers, il2_consumers, d, time):
     # check if external il2 is there if yes check at which time
     if d["c_il2_ex"] != 0:
         if time >= d["time_il2_perturb"]:
-            c_il2_ex = d["c_il2_ex"]*np.exp(-1*(time-d["time_il2_perturb"]))
+            c_il2_ex = d["c_il2_ex"]*np.exp(-1000*(time-d["time_il2_perturb"]))
 
             
     out = (c_il2_ex + d["rate_il2"]*il2_producers)/(d["K_il2"]+il2_consumers)

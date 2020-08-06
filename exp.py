@@ -146,16 +146,17 @@ class Simulation:
 
     def get_il2_max(self):
         """
+        c_il2 is broken beacuse it uses d["parameters"] which resets after vary_param
         get il2 concentration over time including external IL2
         return IL2 total concentration and il2 external concentration
         """
-        if self.state == None:
+        if self.state is None:
             self.run_timecourse()
             print("no timecourse run yet, running timecourse...")
 
         d = dict(self.parameters)
         time = self.time
-        state = self.state
+        state = self.state_raw
         alpha_int = int(d["alpha"] / 2)
         
         # get intermediate cell population and sum it up over all int states
@@ -238,11 +239,11 @@ class Simulation:
             readout_list.append(read)
 
         self.parameters = old_parameters      
-        df = self.vary_param_norm(readout_list, arr, edgenames, normtype)        
+        df = self.vary_param_norm(readout_list, arr, edge_names, normtype, pname)        
         return df
 
 
-    def vary_param_norm(self, readout_list, arr, edgenames, normtype):
+    def vary_param_norm(self, readout_list, arr, edge_names, normtype, pname):
         """
         take readout list and normalize to middle or beginning of array
         Parameters
