@@ -86,7 +86,6 @@ def th_cell_core(th_state, rate_death, beta_p, d, differentiate):
     # divide array into cell states
     myc = th_state[-1]
     il2_ex = th_state[-2]  
-    
     n_molecules = 2
     th_state = th_state[:-n_molecules]
     tnaive, tint, teff = get_cell_states(th_state, d)
@@ -99,7 +98,7 @@ def th_cell_core(th_state, rate_death, beta_p, d, differentiate):
 
     dt_state = differentiate(th_state, teff, d, beta, rate_death, beta_p)
     d_myc = -(1./d["lifetime_myc"])*myc
-    dt_il2_ex = -d["up_il2"]*(tint+teff)*il2_ex
+    dt_il2_ex = d["rate_il2"]*tint-d["up_il2"]*(tint+teff)*il2_ex
     dt_state = np.concatenate((dt_state, [dt_il2_ex], [d_myc]))
  
     return dt_state 
@@ -162,13 +161,9 @@ def get_myc(th_state):
 def get_il2_ex(th_state):
 
     il2_ex = th_state[-2] if th_state[-2] >= 0 else 1e-12
+
     return il2_ex
 
-
-def get_il2(il2_ex, il2_producers, il2_consumers, d, time):
-            
-    out = (il2_ex + d["rate_il2"]*il2_producers)/(d["K_il2"]+il2_consumers)
-    return out
 # =============================================================================
 # homeostasis models
 # =============================================================================
@@ -181,8 +176,8 @@ def il2_menten_prolif(th_state, time, d):
 
     il2_producers, il2_consumers, il7_consumers = get_cyto_producers(th_state, d)  
     il2_ex = get_il2_ex(th_state)
-    c_il2 = get_il2(il2_ex, il2_producers, il2_consumers, d, time)
-    
+    #c_il2 = get_il2(il2_ex, il2_producers, il2_consumers, d, time)
+    c_il2 = il2_ex
     vmax = d["beta_p"]
     beta_p = menten(c_il2, vmax, d["K_il2"], d["hill"])
     lifetime_eff = d["lifetime_eff"]
@@ -190,13 +185,12 @@ def il2_menten_prolif(th_state, time, d):
     return lifetime_eff, beta_p
 
 
-
 def il2_menten_lifetime(th_state, time, d):
     
     il2_producers, il2_consumers, il7_consumers = get_cyto_producers(th_state, d)  
     il2_ex = get_il2_ex(th_state)
-    c_il2 = get_il2(il2_ex, il2_producers, il2_consumers, d, time)
-               
+    #c_il2 = get_il2(il2_ex, il2_producers, il2_consumers, d, time)
+    c_il2 = il2_ex           
     vmax = d["lifetime_eff"]
     lifetime_eff = menten(c_il2, vmax, d["K_il2"], d["hill"])
     beta_p = d["beta_p"]
@@ -257,8 +251,8 @@ def timer_il2(th_state, time, d):
 
     il2_producers, il2_consumers, il7_consumers = get_cyto_producers(th_state, d)  
         
-    c_il2 = get_il2(il2_ex, il2_producers, il2_consumers, d, time)
-    
+    #c_il2 = get_il2(il2_ex, il2_producers, il2_consumers, d, time)
+    c_il2 = il2_ex
     # compute beta p as geometric mean of il2 and myc effect
     product = menten(myc, vmax, K, hill)*menten(c_il2, vmax, K, hill)
     beta_p = np.sqrt(product)

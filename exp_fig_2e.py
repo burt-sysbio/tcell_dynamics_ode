@@ -5,7 +5,7 @@ Spyder Editor
 This is a temporary script file.
 """
 import tcell_model.readout_module as readouts
-import tcell_model.models as model
+import tcell_model.models_fig_2e as model
 
 import numpy as np
 from scipy.integrate import odeint
@@ -111,7 +111,6 @@ class Simulation:
         if hmax != 0.0 : warnings.warn("warning: hmax is set, might take long to integrate")
         
         y0 = self.init_model()
-
         mode = self.mode
         params = dict(self.parameters)
         time = self.time
