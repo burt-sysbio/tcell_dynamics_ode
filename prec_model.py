@@ -151,8 +151,8 @@ class Simulation:
         add new column to cells df which gives percentage of total cells
         """
         df = self.run_timecourse()
-        df_th1 = df[df.cell_type == "th1"]
-        df_tfh = df[df.cell_type == "tfh"]
+        df_th1 = df[df.cell_type == "Th1"]
+        df_tfh = df[df.cell_type == "Tfh"]
         df_th1 = df_th1.reset_index(drop = True)
         df_tfh = df_tfh.reset_index(drop = True)
         df_tfh["total"] = df_th1.cells + df_tfh.cells
@@ -252,13 +252,13 @@ class Simulation:
         df : dataframe
         """
         df = self.run_timecourse()
-        df_th1 = df[df.cell_type == "th1"]
-        df_tfh = df[df.cell_type == "tfh"]
+        df_th1 = df[df.cell_type == "Th1"]
+        df_tfh = df[df.cell_type == "Tfh"]
 
         df_th1 = self.get_readouts_from_df(df_th1)
-        df_th1["name"] = "th1"
+        df_th1["name"] = "Th1"
         df_tfh = self.get_readouts_from_df(df_tfh)
-        df_tfh["name"] = "tfh"
+        df_tfh["name"] = "Tfh"
         df = pd.concat([df_th1, df_tfh])
 
         return df
@@ -316,7 +316,6 @@ class Simulation:
                 #print(key, self.parameters[key])
                 
             read = self.get_readouts()
-
             # this is only one parameter value in case I should ever
             # use more than one param array I would need to change this
             read["param_val"] = val[0]
@@ -339,8 +338,8 @@ class Simulation:
         split readout data frame based on cell types, then compute relative readouts
         """
         # need to get copy otherwise view is returned if I index like this
-        df_th1 = df[df.name == "th1"].copy()
-        df_tfh = df[df.name == "tfh"].copy()
+        df_th1 = df[df.name == "Th1"].copy()
+        df_tfh = df[df.name == "Tfh"].copy()
         df_th1 = df_th1.reset_index(drop = True)
         df_tfh = df_tfh.reset_index(drop = True)
 
@@ -363,16 +362,16 @@ class Simulation:
         cols = ["peak", "area", "tau", "decay", "param_val"]
         
         if "name" in df.columns:
-            df_th1 = df[df.name == "th1"].copy()
-            df_tfh = df[df.name == "tfh"].copy()
+            df_th1 = df[df.name == "Th1"].copy()
+            df_tfh = df[df.name == "Tfh"].copy()
             df_th1 = df_th1.reset_index(drop = True)
             df_tfh = df_tfh.reset_index(drop = True)
         
         # divide each readout column and parameter val column by row that corresponds to norm idx
             df_norm = df_th1.loc[:,cols] / df_th1.loc[norm_idx,cols]
-            df_norm["name"] = "th1"
+            df_norm["name"] = "Th1"
             df_norm2 = df_tfh.loc[:,cols] / df_tfh.loc[norm_idx,cols]        
-            df_norm2["name"] = "tfh"
+            df_norm2["name"] = "Tfh"
             out = pd.concat([df_norm, df_norm2])
         
         else:
@@ -440,16 +439,18 @@ class Simulation:
             norm = matplotlib.colors.Normalize(vmin = vmin, vmax = vmax)  
         
         # make mappable for colorbar
-        cmap = "Blues"
+        cmap = "Greys"
         sm = matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])        
         
         # set hue to parameter name 
         g = sns.relplot(x = "time", y = "rel_cells", kind = "line", data = df, hue = "pval", 
-                        hue_norm = norm, palette = cmap, legend = False)
+                        hue_norm = norm, palette = cmap, legend = False,
+                        aspect = 1.2)
 
 
         g.set(ylim = (0,100), ylabel = "Tfh % of total")
         cbar = g.fig.colorbar(sm)
         # add colorbar       
         cbar.set_label(cbar_label)
+        return g
