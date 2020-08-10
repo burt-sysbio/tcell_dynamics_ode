@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-celltypes = ["naive", "prec", "th1", "tfh"]
+celltypes = ["Naive", "Prec", "Th1", "Tfh"]
 
 
 d = {
@@ -21,25 +21,25 @@ d = {
      "alpha_tfh": 10,
      "beta_naive" : 10,
      "beta_prec" : 10,
-     "beta_p_th1" : 40,
-     "beta_p_tfh" : 40,
+     "beta_p_th1" : 0,
+     "beta_p_tfh" : 0,
      "n_div_eff" : 1,
-     "n_div_prec" : 1.0,
+     "n_div_prec" : 1.,
      "death_th1" : 1,
      "death_tfh" : 1,
-     "beta_m_th1" : 0.1,
-     "beta_m_tfh" : 0.1,
-     "p_th1" : 0.4,
-     "p_tfh" : 0.4,
+     "beta_m_th1" : 0,
+     "beta_m_tfh" : 0,
+     "p_th1" : 0.35,
+     "p_tfh" : 0.45,
      "p_prec" : 0.2,
      "deg_myc" : 0.1,
      "EC50_myc" : 0.5,
-     "fb_ifng_prob_th1" : 1,
+     "fb_ifng_prob_th1" : 1.,
      "fb_il10_prob_th1" : 1.0,
-     "fb_il21_prob_tfh" : 1,
-     "EC50_ifng_prob_th1" : 1.,
-     "EC50_il10_prob_th1" : 0.1,
-     "EC50_il21_prob_tfh" : 1.,
+     "fb_il21_prob_tfh" : 1.,
+     "EC50_ifng_prob_th1" : 0.2,
+     "EC50_il10_prob_th1" : 0.2,
+     "EC50_il21_prob_tfh" : 0.2,
      "r_ifng" : 1,
      "r_il21" : 1,
      "r_il10" : 1,
@@ -48,17 +48,38 @@ d = {
      "deg_il10" : 1,
      }
 
+d2 = dict(d)
+d2["p_prec"] = 0
+d2["beta_p_th1"] = 10
+d2["beta_p_tfh"] = 10
+d2["p_th1"] = 0.44
+d2["p_tfh"] = 0.56
 
-time = np.arange(0,40,0.01)
-sim = Simulation("test", prec_model, d, celltypes, time)
-sim.run_timecourse()
+
+d3 = dict(d)
+d3["fb_ifng_prob_th1"] = 100
+d3["fb_il21_prob_tfh"] = 100
+
+d4 = dict(d2)
+d4["fb_ifng_prob_th1"] = 100
+d4["fb_il21_prob_tfh"] = 100
 
 
-df = sim.state_tidy
-g = sns.relplot(data = df, x = "time", y = "cells", hue = "cell_type", kind = "line")
+time = np.arange(0,12,0.01)
 
-df2 = sim.molecules_tidy
-g = sns.relplot(data = df2, x = "time", y = "conc.", hue = "molecule", kind = "line")
+sim_names = ["prec_prolif", "eff prolif", "prec prolif fb", "eff prolif fb"]
 
-arr_dict = {"fb_ifng_prob_th1" : np.geomspace(1,100,50), 
-            "fb_il21_prob_th1" : np.geomspace(1,100,50)}
+dicts = [d,d2,d3,d4]
+simlist = []
+statelist = []
+for name, dic in zip(sim_names, dicts):
+    
+    sim = Simulation(name, prec_model, dic, celltypes, time)
+    sim.run_timecourse()
+    df = sim.state_tidy 
+    statelist.append(df)
+    
+
+df = pd.concat(statelist)
+df = df[(df.cell_type == "Th1") | (df.cell_type == "Tfh")]
+g = sns.relplot(data = df, x = "time", y = "cells", hue = "cell_type", row = "sim_name", kind = "line")

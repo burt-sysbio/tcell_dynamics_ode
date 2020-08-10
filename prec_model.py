@@ -65,10 +65,11 @@ def prec_model(state, time, d):
     
     beta_p_th1 = d["beta_p_th1"]*pos_fb(myc, d["EC50_myc"]) # add prolif feedback here
     beta_p_tfh = d["beta_p_tfh"]*pos_fb(myc, d["EC50_myc"]) # add prolif feedback here
+    n_div_prec = d["n_div_prec"]*pos_fb(myc, d["EC50_myc"])
     #print(beta_p_th1)
     
     dt_naive = diff_chain(naive_arr, influx_naive, d["beta_naive"], 0, 0, 0, 0)
-    dt_prec = diff_chain(prec_arr, influx_prec, d["beta_prec"], 0, 0, d["p_prec"], d["n_div_prec"])
+    dt_prec = diff_chain(prec_arr, influx_prec, d["beta_prec"], 0, 0, d["p_prec"], n_div_prec)
     dt_th1 = diff_chain(th1_arr, influx_th1, beta_p_th1, d["beta_m_th1"], d["death_th1"], 1, d["n_div_eff"])
     dt_tfh = diff_chain(tfh_arr, influx_tfh, beta_p_tfh, d["beta_m_tfh"], d["death_tfh"], 1, d["n_div_eff"])
 
@@ -156,6 +157,8 @@ class Simulation:
         df_th1 = df_th1.reset_index(drop = True)
         df_tfh = df_tfh.reset_index(drop = True)
         df_tfh["total"] = df_th1.cells + df_tfh.cells
+        # if the sum of th1 and tfh cells is already very small set to Nan to avoid div. error
+        df_tfh["total"][df_tfh.total < 1e-6] = np.nan
         df_tfh["rel_cells"] = (df_tfh.cells / df_tfh.total)*100
         #add total cells and compute relative cell fractions      
         return df_tfh
@@ -234,11 +237,14 @@ class Simulation:
         colnames = self.celltypes
         df = pd.DataFrame(self.state, columns = colnames)
        	
+        # compute some extra numbers
+        df["Total"] = df.Prec + df.Th1 + df.Tfh
+
         df["time"] = self.time
         df["sim_name"] = self.name
 
         #make df tidy for both cell types
-        df = pd.melt(df, value_vars = colnames, var_name = "cell_type", 
+        df = pd.melt(df, var_name = "cell_type", 
                      value_name = "cells", id_vars = ["time", "sim_name"])
 
         self.state_tidy = df

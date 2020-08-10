@@ -5,6 +5,7 @@ Created on Wed Aug  5 13:49:43 2020
 
 @author: burt
 
+precursors proliferate
 create figure with 2 pos feedback and different init probs 
 then vary feedback strength
 do this for alpha = 1 and alpha = 10
@@ -16,7 +17,7 @@ import pandas as pd
 import seaborn as sns
 sns.set(context = "poster", style = "ticks")
 
-celltypes = ["naive", "prec", "Th1", "Tfh"]
+celltypes = ["naive", "Prec", "Th1", "Tfh"]
 
 def filter_cells(cells, names):
     cells = cells[cells.cell_type.isin(names)]
@@ -31,10 +32,10 @@ d = {
      "beta_prec" : 10,
      "beta_p_th1" : 10,
      "beta_p_tfh" :10,
-     "beta_m_th1" : 0.1,
-     "beta_m_tfh" : 0.1,
+     "beta_m_th1" : 0,
+     "beta_m_tfh" : 0,
      "n_div_eff" : 1,
-     "n_div_prec" : 1.,
+     "n_div_prec" : 1.0,
      "death_th1" : 2,
      "death_tfh" : 2,
      "p_th1" : 0.45,
@@ -57,6 +58,13 @@ d = {
      }
 
 
+# set parameters specific to this condition
+d["beta_p_th1"] = 0
+d["beta_p_tfh"] = 0
+d["p_prec"] = 0.2
+d["n_div_prec"] = 1
+
+
 d_rate = dict(d)
 params = ["alpha_naive", "alpha_prec", "alpha_th1", "alpha_tfh", "beta_naive",
           "beta_prec"]
@@ -69,7 +77,7 @@ d_rate["beta_p_tfh"] = d["beta_p_tfh"] / 10
 d_fb = dict(d)
 d_fb["fb_il10_prob_th1"] = 10
 
-time = np.arange(0,10,0.01)
+time = np.arange(0,12,0.01)
 
 sim_rate = Simulation("alpha1", prec_model, d_rate, celltypes, time)
 sim_rtm = Simulation("fb off", prec_model, d, celltypes, time)
@@ -79,15 +87,15 @@ sim_rtm.run_timecourse()
 sim_fb.run_timecourse()
 
 df = pd.concat([sim_rtm.state_tidy, sim_fb.state_tidy])
-df = filter_cells(df, names = ["Th1", "Tfh"])
+df = filter_cells(df, names = ["Th1", "Tfh", "Prec", "Total"])
 g = sns.relplot(
     data = df, x = "time", y = "cells", 
     hue = "cell_type", kind = "line",
     style = "sim_name", legend = False, aspect = 1.2)
 
-g.savefig("fig3A_1.svg")
-arr_dict = {"fb_ifng_prob_th1" : np.geomspace(1,10,50), 
-            "fb_il21_prob_th1" : np.geomspace(1,10,50)}
+#g.savefig("fig3A_1.svg")
+arr_dict = {"fb_ifng_prob_th1" : np.geomspace(1,100,50), 
+            "fb_il21_prob_th1" : np.geomspace(1,100,50)}
 
 # vary parameters
 df = sim_rate.vary_param(arr_dict)
@@ -119,4 +127,4 @@ g.set(xscale = "log", xlabel = "feedback fold-change")
 df8 = sim_rtm.run_timecourses(arr_dict)
 sim_rtm.plot_timecourses(df8, log = True, cbar_label = "feedback fold-change")
 
-g.savefig("fig3A_2.pdf")
+#g.savefig("fig3A_2.pdf")
