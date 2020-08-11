@@ -6,8 +6,8 @@ Created on Wed Jan 29 09:02:12 2020
 @author: burt
 """
 
-from tcell_model.exp_fig_2e import Simulation, SimList, make_sim_list, change_param2
-import tcell_model.models_fig_2e as model
+from exp_fig_2e import Simulation, SimList, make_sim_list, change_param2
+import models_fig_2e as model
 
 import numpy as np
 #import matplotlib.pyplot as plt
@@ -80,9 +80,9 @@ g = sns.relplot(data = df, x = "time", y = "cells", hue = "name", kind = "line")
 # make simulation lists
 simlist = [sim1, sim2]
 
-res = 30
+res = 100
 lo = 1
-hi = 10000
+hi = 1e10
 il2_arr = np.geomspace(lo, hi, res)
 arr_name = "IL2 ext. (a.u.)"
 name = "c_il2_ex"
@@ -95,7 +95,7 @@ flat_list = [item for sublist in simlist3 for item in sublist]
 exp = SimList(flat_list)
 g, data = exp.plot_timecourses(il2_arr, arr_name, log = True, log_scale = True)
 g.set(title = "", ylim = (1,150), xlim = (0,12))
-
+plt.show()
 
 # add additional lineplot
 for ax, sim in zip(g.axes.flat, simlist):
@@ -104,7 +104,7 @@ for ax, sim in zip(g.axes.flat, simlist):
                  data = df, ax = ax)
 
 
-g.savefig("../figures/fig2/fig2E_timecourse.svg")
+#g.savefig("../figures/fig2/fig2E_timecourse.svg")
 # =============================================================================
 # without heterogeneity, vary peaktime in both models
 # =============================================================================
@@ -119,10 +119,11 @@ df = df[df.readout != "Decay"]
 g = sns.relplot(data = df, x = "p_val", y = "log2FC", col = "name", kind = "line",
                 hue = "readout", facet_kws = {"despine" : False, "legend_out" : False})
 g.set(xscale = "log")
-g.set(xlabel = "IL2 ext. (a.u.)", xlim = (lo, hi), ylim = (None, 2.0), ylabel = "effect size")
+g.set(xlabel = "IL2 ext. (a.u.)", xlim = (lo, hi), ylim = (None, None), ylabel = "effect size")
 
 g.set_titles("{col_name}")
-g.savefig("../figures/fig2/fig2E_readouts.svg")
+#g.savefig("../figures/fig2/fig2E_readouts.svg")
+plt.show()
 
 il2_arr = sim1.get_il2_max()
 il2_arr2 = sim2.get_il2_max()

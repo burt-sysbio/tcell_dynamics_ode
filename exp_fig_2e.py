@@ -4,8 +4,8 @@ Spyder Editor
 
 This is a temporary script file.
 """
-import tcell_model.readout_module as readouts
-import tcell_model.models_fig_2e as model
+import readout_module as readouts
+import models_fig_2e as model
 
 import numpy as np
 from scipy.integrate import odeint
@@ -35,7 +35,7 @@ def lognorm_params(mode, stddev):
     return shape, scale
 
 
-def change_param2(simlist, pname, arr):
+def change_param(simlist, pname, arr):
     assert len(arr) == len(simlist)
     for sim, val in zip(simlist,  arr):
         #print(val)

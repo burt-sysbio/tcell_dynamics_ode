@@ -35,7 +35,7 @@ def lognorm_params(mode, stddev):
     return shape, scale
 
 
-def change_param2(simlist, pname, arr):
+def change_param(simlist, pname, arr):
     assert len(arr) == len(simlist)
     for sim, val in zip(simlist,  arr):
         #print(val)
