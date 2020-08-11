@@ -11,6 +11,9 @@ import numpy as np
 from scipy.integrate import odeint
 import seaborn as sns
 import pandas as pd
+import matplotlib.pyplot as plt
+
+sns.set(style = "ticks", context = "poster")
 
 def diff_chain(state, influx, beta, death, n_div):
     """
@@ -65,13 +68,13 @@ def simple_chain(state, time, d):
     n_eff = np.sum(eff)
 
     # algebraic relations timer
-    beta_p = d["beta_p"]*pos_fb(myc, d["EC50_myc"])
+    beta_p = d["beta_p"]*prob_fb(n_eff, d["fb_strength"], d["fb_EC50"])
     # algebraic relations feedback
-    beta = d["beta"]*prob_fb(n_eff, d["fb_strength"], d["fb_EC50"])
+    beta = d["beta"]
     influx_eff = naive[-1]*beta
-
+    death = d["d_eff"]*time
     dt_naive = diff_chain(naive, influx_naive, beta, d["d_naive"], d["div_naive"])
-    dt_eff = diff_chain(eff, influx_eff, beta_p, d["d_eff"], d["div_eff"])
+    dt_eff = diff_chain(eff, influx_eff, beta_p, death, d["div_eff"])
 
     dt_state = np.concatenate((dt_naive, dt_eff, [dt_myc]))
     
@@ -109,23 +112,47 @@ def get_cells(state, time, d):
     return df
 
 d = {
-     "alpha_naive" : 10,
-     "beta" : 10,
+     "alpha_naive" : 1,
+     "beta" : 1,
      "div_naive" : 0,
      "div_eff" : 1,
      "alpha_eff" : 10,
-     "beta_p" : 0,
+     "beta_p" : 10,
      "d_naive": 0,
-     "d_eff" : 0,
-     "fb_strength" : 100,
-     "fb_EC50" : 0.5,
+     "d_eff" : 1.0,
+     "fb_strength" : 1,
+     "fb_EC50" : 0.1,
      "EC50_myc" : 0.5,
      "deg_myc" : 0.1,
      }
 
-time = np.arange(0,10, 0.01)
-state = run_model(time, d)
+fb_stren = 2.5
+d2 =dict(d)
+d2["alpha_naive"] = 10
+d2["beta"] = 10
 
-cells = get_cells(state, time, d)
-cells_tidy = pd.melt(cells, id_vars = ["time"])
-g = sns.relplot(data = cells_tidy, x = "time", y = "value", hue = "variable", kind = "line")
+d3 = dict(d)
+d3["fb_strength"] = fb_stren
+d4 = dict(d2)
+d4["fb_strength"] = fb_stren
+
+dicts = [d,d2, d3, d4]
+delays = ["delay", "no delay", "delay", "no delay"]
+feedbacks = ["fb off", "fb off", "fb on", "fb on"]
+
+time = np.arange(0,5, 0.01)
+
+df_list = []
+for dic, delay, fb in zip(dicts, delays, feedbacks):
+    state = run_model(time, dic)
+    cells = get_cells(state, time, dic)
+    cells = pd.melt(cells, id_vars = ["time"], value_name= "cells", var_name= "celltype")
+    cells = cells[cells.celltype == "eff"]
+    cells["delay"] = delay
+    cells["feedback"] = fb
+    df_list.append(cells)
+
+df = pd.concat(df_list)
+g = sns.relplot(data = df, x = "time", y = "cells", col = "feedback", hue = "delay", kind = "line",
+                legend = False, aspect = 1.0)
+plt.show()

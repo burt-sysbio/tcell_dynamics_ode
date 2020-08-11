@@ -11,6 +11,8 @@ import numpy as np
 from scipy.integrate import odeint
 import seaborn as sns
 import pandas as pd
+import matplotlib.pyplot as plt
+
 
 def diff_chain(state, influx, beta, death, n_div):
     """
@@ -100,19 +102,40 @@ def get_cells(state, time, d):
     return df
 
 d = {
-     "alpha" : 1,
-     "beta" : 2,
+     "alpha" : 10,
+     "beta" : 10,
      "div_eff" : 1,
      "d_naive": 0,
-     "d_eff" : 0.5,
-     "fb_strength" : 2,
+     "d_eff" : 0,
+     "fb_strength" : 1,
      "fb_EC50" : 10.0,
      "EC50_myc" : 2.0,
      "deg_myc" : 0.1,
      }
 
-time = np.arange(0,10, 0.01)
-state = run_model(time, d)
 
-cells = get_cells(state, time, d)
-g = sns.relplot(data = cells, x = "time", y = "cells", kind = "line")
+d2 =dict(d)
+d2["alpha"] = 1
+d2["beta"] = 1
+
+d3 = dict(d)
+d3["fb_strength"] = 1.5
+d4 = dict(d2)
+d4["fb_strength"] = 1.5
+
+dicts = [d,d2]
+names = ["delay no fb", "no delay no fb"]
+time = np.arange(0,3, 0.01)
+
+df_list = []
+for dic, name in zip(dicts, names):
+    state = run_model(time, dic)
+    cells = get_cells(state, time, dic)
+    cells["norm"] = cells.cells / cells.cells.max()
+    cells["cond."] = name
+    df_list.append(cells)
+
+df = pd.concat(df_list)
+
+g = sns.relplot(data = df, hue= "cond.", x = "time", y = "cells", kind = "line")
+plt.show()
