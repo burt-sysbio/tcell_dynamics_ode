@@ -15,6 +15,7 @@ from prec_model import Simulation, prec_model
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
 sns.set(context = "poster", style = "ticks")
 
 celltypes = ["naive", "Prec", "Th1", "Tfh"]
@@ -79,13 +80,15 @@ d_fb["fb_il10_prob_th1"] = 10
 
 time = np.arange(0,12,0.01)
 
-sim_rate = Simulation("alpha1", prec_model, d_rate, celltypes, time)
-sim_rtm = Simulation("fb off", prec_model, d, celltypes, time)
+# set up simulations
+sim_rate = Simulation("alpha=1", prec_model, d_rate, celltypes, time)
+sim_rtm = Simulation("alpha=10", prec_model, d, celltypes, time)
 sim_fb = Simulation("fb on", prec_model, d_fb, celltypes, time)
 sim_rate.run_timecourse()
 sim_rtm.run_timecourse()
 sim_fb.run_timecourse()
 
+# plot timecourse for simulations
 df = pd.concat([sim_rtm.state_tidy, sim_fb.state_tidy])
 df = filter_cells(df, names = ["Th1", "Tfh", "Prec", "Total"])
 g = sns.relplot(
@@ -93,6 +96,7 @@ g = sns.relplot(
     hue = "cell_type", kind = "line",
     style = "sim_name", legend = False, aspect = 1.2)
 
+plt.show()
 #g.savefig("fig3A_1.svg")
 arr_dict = {"fb_ifng_prob_th1" : np.geomspace(1,100,50), 
             "fb_il21_prob_th1" : np.geomspace(1,100,50)}
@@ -114,17 +118,13 @@ df7 = pd.concat([df5, df6])
 df7 = df7.melt(id_vars = ["param_val", "sim_name", "param_name"], value_name = "effect size", var_name = "readout")
 
 # plot
-g = sns.relplot(data = df7, x = "param_val", y = "effect size", col = "sim_name", 
+g = sns.relplot(data = df7, x = "param_val", y = "effect size", col = "sim_name",
                 hue = "readout", kind = "line")
 g.set(xscale = "log", xlabel = "feedback fold-change")
-
-g = sns.relplot(data = df7, x = "param_val", y = "effect size", col = "readout", 
-                hue = "sim_name", kind = "line", col_wrap=(2))
-g.set(xscale = "log", xlabel = "feedback fold-change")
-
-
+plt.show()
+g.savefig("plot_fig3A_readouts.svg")
 # plot time course and relative cells with feedback variation
 df8 = sim_rtm.run_timecourses(arr_dict)
-sim_rtm.plot_timecourses(df8, log = True, cbar_label = "feedback fold-change")
-
-#g.savefig("fig3A_2.pdf")
+g = sim_rtm.plot_timecourses(df8, log = True, cbar_label = "feedback fold-change")
+plt.show()
+g.savefig("plot_fig3A_timecourse.pdf")

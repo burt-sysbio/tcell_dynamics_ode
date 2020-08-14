@@ -52,7 +52,8 @@ def sample_prolif(sim, cv_array, pname, n):
     df = pd.DataFrame({"peak mean": peak_mean,
                        "peak sd": sd_peak_mean,
                        "peaktime mean": peaktime_mean,
-                       "peaktime sd": sd_peak_time})
+                       "peaktime sd": sd_peak_time,
+                        "CV" : cv_array})
     return df
 
 
@@ -80,7 +81,7 @@ d= {
         "crit" : False,
         "t0" : None,
         "c_il2_ex" : 0,
-        "up_il2" : 0.1,
+        "up_il2" : 0.087,
         }
 
 
@@ -104,16 +105,14 @@ sim1 = Simulation(name="IL2", mode=model1, parameters=d,
 sim2 = Simulation(name="IL2+Timer", mode=model2, parameters=d,
                   time=time, core=model.diff_effector)
 
-
+# plot time course
 df1 = sim1.run_timecourse()
 df2 = sim2.run_timecourse()
-
-sum(sim1.get_il2_ex())
-sum(sim2.get_il2_ex())
 df = pd.concat([df1, df2])
 g = sns.relplot(data = df, x = "time", y = "cells", hue = "name", kind = "line")
 plt.show()
-
+#
+# plot time course for diff uptake rates IL2 as heterogeneity from lognorm dist
 n = 200 # number of samples to draw for each val of cv_arr
 pname2 = "rate_il2"
 pname = "up_il2"
@@ -129,8 +128,8 @@ for sim in sims:
     for sd, label in zip(sd_arr, labels):
         # draw samples from lognorm dist for 2 parameters
         sample = sim.gen_lognorm_params(pname, sd, n)
-        fig, ax = plt.subplots()
-        sns.distplot(sample, ax = ax)
+        #fig, ax = plt.subplots()
+        #sns.distplot(sample, ax = ax)
         #sample2 = sim.gen_lognorm_params(pname2, sd, n)
         # for each val in sample arr make new simulation
         # make a simulation list as deepcopy from original list
@@ -144,21 +143,15 @@ for sim in sims:
         df_list.append(df)
 
 df = pd.concat(df_list)
+df.to_csv("fig2e_timecourse.csv")
 
-
-g = sns.relplot(data = df, x = "time", y = "cells", hue = "model_name", col = "sd", kind = "line",
-                ci = "sd")
-
-g.set_titles("{col_name}")
-plt.show()
 # vary rate_il2 by using default mean and varying sd, then drawing from sd and compute means
-n_samples = 100
+n_samples = 200
 n_cv_arr = 50
 cv_arr = np.geomspace(0.1, 1, num = n_cv_arr)
 pname = "up_il2"
 
 readouts_il2 = sample_prolif(sim1, cv_arr, pname, n_samples)
 readouts_timer = sample_prolif(sim2, cv_arr, pname, n_samples)
-
 readouts_il2.to_csv("readouts_il2.csv")
 readouts_timer.to_csv("readouts_timer.csv")
