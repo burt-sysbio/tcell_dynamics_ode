@@ -1,3 +1,8 @@
+"""
+draw parameter values from lognorm dist with constant mean and look at systems behavior
+first look at time courses for large and small CV
+then vary CV systematically and quantify
+"""
 
 from exp_fig_2e import Simulation, SimList, make_sim_list, change_param
 import models_fig_2e as model
@@ -24,6 +29,8 @@ def sample_prolif(sim, cv_array, pname, n):
 
     for std in std_array:
         sample = sim.gen_lognorm_params(pname, std, n)
+
+        
         simlist = make_sim_list(sim, n=n)
         simlist = change_param(simlist, pname, sample)
         exp = SimList(simlist)
@@ -42,7 +49,11 @@ def sample_prolif(sim, cv_array, pname, n):
         peaktime_mean.append(peaktimes_mean)
         sd_peak_time.append(sd_peaktimes)
 
-    return peak_mean, sd_peak_mean, peaktime_mean, sd_peak_time
+    df = pd.DataFrame({"peak mean": peak_mean,
+                       "peak sd": sd_peak_mean,
+                       "peaktime mean": peaktime_mean,
+                       "peaktime sd": sd_peak_time})
+    return df
 
 
 d= {
@@ -78,7 +89,7 @@ sns.set(context = "poster", style = "ticks", rc = {"lines.linewidth": 4})
 # =============================================================================
 # make simulation for a model for beta p
 # =============================================================================
-time = np.arange(0, 30, 0.1)
+time = np.arange(0, 12, 0.01)
 
 # =============================================================================
 # set up perturbations for IL2 and IL2+timer model with external il2
@@ -103,27 +114,51 @@ df = pd.concat([df1, df2])
 g = sns.relplot(data = df, x = "time", y = "cells", hue = "name", kind = "line")
 plt.show()
 
-n = 50 # number of samples to draw for each val of cv_arr
-cv_arr = np.geomspace(0.1, 1, num = 20)
-pname = "rate_il2"
+n = 200 # number of samples to draw for each val of cv_arr
+pname2 = "rate_il2"
+pname = "up_il2"
 
 # show timecourse once for samples drawn small dist. with small cv and once with large cv
-sd_arr = [0.1,1.0]
+sd_arr = [0.1, 0.5, 1.0]
 sims = [sim1, sim2]
 df_list = []
-labels = ["low cv", "high cv"]
+labels = ["CV=0.1", "CV=0.5", "CV=1.0"]
+
+# loop over both simulations (high cv and low cv) and over both models, then draw params from lognorm dist
 for sim in sims:
     for sd, label in zip(sd_arr, labels):
+        # draw samples from lognorm dist for 2 parameters
         sample = sim.gen_lognorm_params(pname, sd, n)
+        fig, ax = plt.subplots()
+        sns.distplot(sample, ax = ax)
+        #sample2 = sim.gen_lognorm_params(pname2, sd, n)
+        # for each val in sample arr make new simulation
+        # make a simulation list as deepcopy from original list
         simlist = make_sim_list(sim, n = len(sample))
+        # then change parameters in each list
         simlist = change_param(simlist, pname, sample)
+        #simlist = change_param(simlist, pname2, sample2)
         exp = SimList(simlist)
-        df = exp.run_timecourses(arr=sample, arr_name=pname, log = False)
+        df = exp.run_timecourses()
         df["sd"] = label
         df_list.append(df)
 
-df = pd.concat([df_list])
+df = pd.concat(df_list)
 
+
+g = sns.relplot(data = df, x = "time", y = "cells", hue = "model_name", col = "sd", kind = "line",
+                ci = "sd")
+
+g.set_titles("{col_name}")
+plt.show()
 # vary rate_il2 by using default mean and varying sd, then drawing from sd and compute means
-#readouts_il2 = sample_prolif(sim1, cv_arr, pname, n)
-#readouts_timer = sample_prolif(sim2, cv_arr, pname, n)
+n_samples = 100
+n_cv_arr = 50
+cv_arr = np.geomspace(0.1, 1, num = n_cv_arr)
+pname = "up_il2"
+
+readouts_il2 = sample_prolif(sim1, cv_arr, pname, n_samples)
+readouts_timer = sample_prolif(sim2, cv_arr, pname, n_samples)
+
+readouts_il2.to_csv("readouts_il2.csv")
+readouts_timer.to_csv("readouts_timer.csv")
