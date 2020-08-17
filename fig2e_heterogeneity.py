@@ -14,47 +14,94 @@ import seaborn as sns
 
 import matplotlib.ticker as ticker
 import matplotlib.pyplot as plt
+sns.set(context = "poster", style = "ticks", rc = {"lines.linewidth": 4})
+
+def dummy(sim, sample, pname, n):
+    simlist = make_sim_list(sim, n)
+    simlist = change_param(simlist, pname, sample)
+    exp = SimList(simlist)
+    df = exp.run_timecourses()
+    return df
 
 
-def sample_prolif(sim, cv_array, pname, n):
+def dummy2(df):
+    # get std peakmaxima and peaktimes first sim
+    index = df.groupby("name").cells.max()
+    max_values = index.values
+    mean_max = np.mean(max_values)
+    sd_max = np.std(max_values)
+    peaktimes = df[df.cells.isin(max_values)].time
+    sd_peaktimes = peaktimes.std()
+    mean_peaktimes = peaktimes.mean()
+
+    return np.array([mean_max, sd_max, mean_peaktimes, sd_peaktimes])
+
+def sample_prolif(sim1, sim2, cv_arr, pname, n_samples):
     """
     for each val in cv_arr draw n samples from lognorm dist. with sd = val*mean
     compute and return readouts
     """
-    std_array = cv_array * sim.parameters[pname]
-    peak_mean = []
-    peaktime_mean = []
-    sd_peak_mean = []
-    sd_peak_time = []
+    sd_array = cv_arr * sim1.parameters[pname]
+    reads1_list = []
+    reads2_list = []
 
-    for std in std_array:
-        sample = sim.gen_lognorm_params(pname, std, n)
+    for sd in sd_array:
+        sample = sim1.gen_lognorm_params(pname, sd, n_samples)
+        df1 = dummy(sim1, sample, pname, len(sample))
+        df2 = dummy(sim2, sample, pname, len(sample))
+        reads1 = dummy2(df1)
+        reads2 = dummy2(df2)
 
-        
-        simlist = make_sim_list(sim, n=n)
-        simlist = change_param(simlist, pname, sample)
-        exp = SimList(simlist)
-        df = exp.run_timecourses()
+        reads1_list.append(reads1)
+        reads2_list.append(reads2)
 
-        # get std peakmaxima and peaktimes first sim
-        index = df.groupby("name").cells.max()
-        mean = np.mean(index.values)
-        # cv = np.std(index.values)/mean
-        peaktimes = df[df.cells.isin(index.values)].time
-        sd_peaktimes = peaktimes.std()
-        peaktimes_mean = peaktimes.mean()
+    # format output into one single data frame
+    arr1 = np.stack(reads1_list)
+    arr2 = np.stack(reads2_list)
+    colnames = ["Peak Mean", "Peak SD", "Peaktime Mean", "Peaktime SD"]
+    df1 = pd.DataFrame(arr1, columns = colnames)
+    df2 = pd.DataFrame(arr2, columns = colnames)
+    df1["CV"] = cv_arr
+    df2["CV"] = cv_arr
+    df1["name"] = sim1.name
+    df2["name"] = sim2.name
+    df = pd.concat([df1, df2])
 
-        peak_mean.append(mean)
-        sd_peak_mean.append(np.std(index.values))
-        peaktime_mean.append(peaktimes_mean)
-        sd_peak_time.append(sd_peaktimes)
-
-    df = pd.DataFrame({"peak mean": peak_mean,
-                       "peak sd": sd_peak_mean,
-                       "peaktime mean": peaktime_mean,
-                       "peaktime sd": sd_peak_time,
-                        "CV" : cv_array})
     return df
+
+
+def lognorm_vary(sim1, sim2, cv_arr, pname, n_samples, n_repeats):
+    """
+    for each val in cv_arr generate params from lognorm dist and run timecourses
+    return df for timecourse data and for samples
+    """
+    df_list = []
+    samples_list = []
+
+    for cv in cv_arr:
+        sd = cv*sim1.parameters[pname]
+        sample_arr = np.array([])
+        for i in range(n_repeats):
+            # draw samples from lognorm dist for 2 parameters
+            sample = sim1.gen_lognorm_params(pname, sd, n_samples)
+            sample_arr = np.append(sample_arr, sample)
+            df1 = dummy(sim1, sample, pname, len(sample))
+            df2 = dummy(sim2, sample, pname, len(sample))
+            # same for sim2
+            df = pd.concat([df1, df2])
+            df["rep"] = i
+            df["CV"] = cv
+            df_list.append(df)
+
+        samples_list.append(sample_arr)
+
+    df = pd.concat(df_list)
+    df2 = pd.DataFrame(samples_list)
+    df2 = df2.T
+    colnames = [str(cv) for cv in cv_arr]
+    df2.columns = colnames
+
+    return df, df2
 
 
 d= {
@@ -84,24 +131,18 @@ d= {
         "up_il2" : 0.087,
         }
 
-
-sns.set(context = "poster", style = "ticks", rc = {"lines.linewidth": 4})
-
 # =============================================================================
 # make simulation for a model for beta p
 # =============================================================================
-time = np.arange(0, 12, 0.01)
+time = np.arange(0, 12, 0.05)
 
 # =============================================================================
 # set up perturbations for IL2 and IL2+timer model with external il2
 # =============================================================================
 model1 = model.il2_menten_prolif
 model2 = model.timer_il2
-
-
 sim1 = Simulation(name="IL2", mode=model1, parameters=d,
                   time=time, core=model.diff_effector)
-
 sim2 = Simulation(name="IL2+Timer", mode=model2, parameters=d,
                   time=time, core=model.diff_effector)
 
@@ -111,47 +152,25 @@ df2 = sim2.run_timecourse()
 df = pd.concat([df1, df2])
 g = sns.relplot(data = df, x = "time", y = "cells", hue = "name", kind = "line")
 plt.show()
-#
-# plot time course for diff uptake rates IL2 as heterogeneity from lognorm dist
-n = 200 # number of samples to draw for each val of cv_arr
-pname2 = "rate_il2"
-pname = "up_il2"
-
-# show timecourse once for samples drawn small dist. with small cv and once with large cv
-sd_arr = [0.1, 0.5, 1.0]
-sims = [sim1, sim2]
-df_list = []
-labels = ["CV=0.1", "CV=0.5", "CV=1.0"]
 
 # loop over both simulations (high cv and low cv) and over both models, then draw params from lognorm dist
-for sim in sims:
-    for sd, label in zip(sd_arr, labels):
-        # draw samples from lognorm dist for 2 parameters
-        sample = sim.gen_lognorm_params(pname, sd, n)
-        #fig, ax = plt.subplots()
-        #sns.distplot(sample, ax = ax)
-        #sample2 = sim.gen_lognorm_params(pname2, sd, n)
-        # for each val in sample arr make new simulation
-        # make a simulation list as deepcopy from original list
-        simlist = make_sim_list(sim, n = len(sample))
-        # then change parameters in each list
-        simlist = change_param(simlist, pname, sample)
-        #simlist = change_param(simlist, pname2, sample2)
-        exp = SimList(simlist)
-        df = exp.run_timecourses()
-        df["sd"] = label
-        df_list.append(df)
-
-df = pd.concat(df_list)
-df.to_csv("fig2e_timecourse.csv")
-
-# vary rate_il2 by using default mean and varying sd, then drawing from sd and compute means
+# plot time course for diff uptake rates IL2 as heterogeneity from lognorm dist
+pnames = ["up_il2", "rate_il2"]
+cv_arr = [0.1, 0.5, 1.0, 10.0]
 n_samples = 200
-n_cv_arr = 50
-cv_arr = np.geomspace(0.1, 1, num = n_cv_arr)
-pname = "up_il2"
+rep = 1
+res_cv_arr = 60
+cv_reads = np.geomspace(0.1, 10, num = res_cv_arr)
 
-readouts_il2 = sample_prolif(sim1, cv_arr, pname, n_samples)
-readouts_timer = sample_prolif(sim2, cv_arr, pname, n_samples)
-readouts_il2.to_csv("readouts_il2.csv")
-readouts_timer.to_csv("readouts_timer.csv")
+# do  analysis for uptake and secretion rate of IL2
+for pname in pnames:
+    # show timecourse once for samples drawn small dist. with small cv and once with large cv
+    sims = [sim1, sim2]
+    df, df_samples = lognorm_vary(sim1, sim2, cv_arr, pname, n_samples, rep)
+
+    df_samples.to_csv("data_fig2e_lognorm_samples_"+pname+".csv", index=False)
+    df.to_csv("data_fig2e_timecourse_"+pname+".csv", index=False)
+
+    # vary rate_il2 by using default mean and varying sd, then drawing from sd and compute means
+    df_readouts = sample_prolif(sim1, sim2, cv_reads, pname, n_samples)
+    df_readouts.to_csv("data_fig2e_readouts_"+pname+".csv", index=False)

@@ -6,7 +6,7 @@ Created on Wed Jan 29 09:02:12 2020
 @author: burt
 """
 
-from exp_fig_2e import Simulation, SimList, make_sim_list, change_param2
+from exp_fig_2e import Simulation, SimList, make_sim_list, change_param
 import models_fig_2e as model
 
 import numpy as np
@@ -57,62 +57,50 @@ time = np.arange(0, 30, 0.1)
 # =============================================================================
 model1 = model.il2_menten_prolif
 model2 = model.timer_il2
-
-
 sim1 = Simulation(name="IL2", mode=model1, parameters=d, 
                   time=time, core=model.diff_effector)
-
 sim2 = Simulation(name="IL2+Timer", mode=model2, parameters=d, 
                   time=time, core=model.diff_effector)
 
-
+# run default timecourse
 df1 = sim1.run_timecourse()
 df2 = sim2.run_timecourse()
-
-sum(sim1.get_il2_ex())
-sum(sim2.get_il2_ex())
 df = pd.concat([df1, df2])
 g = sns.relplot(data = df, x = "time", y = "cells", hue = "name", kind = "line")
 
-# =============================================================================
-# run time course simulation
-# =============================================================================
-# make simulation lists
-simlist = [sim1, sim2]
-
-res = 100
+# set up parameters
+res = 50
 lo = 1
-hi = 1e10
+hi = 1e15
 il2_arr = np.geomspace(lo, hi, res)
 arr_name = "IL2 ext. (a.u.)"
-name = "c_il2_ex"
+pname = "c_il2_ex"
 
+# vary IL2 external concentration at time 0 for il2 and timer+il2 model
+simlist = [sim1, sim2]
 simlist2 = [make_sim_list(sim, n = res) for sim in simlist]
-simlist3 = [change_param2(simlist, name, il2_arr) for simlist in simlist2]
+simlist3 = [change_param(simlist, pname, il2_arr) for simlist in simlist2]
 # make simlist3 flat
 flat_list = [item for sublist in simlist3 for item in sublist]
 
+# plot timecourses
 exp = SimList(flat_list)
 g, data = exp.plot_timecourses(il2_arr, arr_name, log = True, log_scale = True)
-g.set(title = "", ylim = (1,150), xlim = (0,12))
-plt.show()
+g.set(title = "", ylim = (1,1000), xlim = (0,12))
 
-# add additional lineplot
+# add additional lineplot for default values
 for ax, sim in zip(g.axes.flat, simlist):
     df = sim.run_timecourse()
     sns.lineplot(x = "time", y = "cells", color = "crimson",
                  data = df, ax = ax)
-
+plt.show()
 
 #g.savefig("../figures/fig2/fig2E_timecourse.svg")
 # =============================================================================
 # without heterogeneity, vary peaktime in both models
 # =============================================================================
-
-arr = np.geomspace(lo, hi, 50)
-pname = "c_il2_ex"
-df1 = sim1.vary_param(pname, arr)
-df2 = sim2.vary_param(pname, arr)
+df1 = sim1.vary_param(pname, il2_arr)
+df2 = sim2.vary_param(pname, il2_arr)
 
 df = pd.concat([df1,df2])
 df = df[df.readout != "Decay"]
@@ -124,7 +112,3 @@ g.set(xlabel = "IL2 ext. (a.u.)", xlim = (lo, hi), ylim = (None, None), ylabel =
 g.set_titles("{col_name}")
 #g.savefig("../figures/fig2/fig2E_readouts.svg")
 plt.show()
-
-il2_arr = sim1.get_il2_max()
-il2_arr2 = sim2.get_il2_max()
-
