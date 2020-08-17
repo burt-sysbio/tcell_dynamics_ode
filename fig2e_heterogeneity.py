@@ -134,11 +134,12 @@ d= {
 # =============================================================================
 # make simulation for a model for beta p
 # =============================================================================
-time = np.arange(0, 12, 0.05)
 
 # =============================================================================
 # set up perturbations for IL2 and IL2+timer model with external il2
 # =============================================================================
+time = np.arange(0, 12, 0.05)
+
 model1 = model.il2_menten_prolif
 model2 = model.timer_il2
 sim1 = Simulation(name="IL2", mode=model1, parameters=d,
@@ -157,12 +158,14 @@ plt.show()
 # plot time course for diff uptake rates IL2 as heterogeneity from lognorm dist
 pnames = ["up_il2", "rate_il2"]
 cv_arr = [0.1, 0.5, 1.0, 10.0]
-n_samples = 200
+n_samples = 100
 rep = 1
 res_cv_arr = 60
 cv_reads = np.geomspace(0.1, 10, num = res_cv_arr)
 
 # do  analysis for uptake and secretion rate of IL2
+# decrease time increment
+
 for pname in pnames:
     # show timecourse once for samples drawn small dist. with small cv and once with large cv
     sims = [sim1, sim2]

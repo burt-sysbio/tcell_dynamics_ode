@@ -4,7 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 sns.set(style = "ticks", context = "poster")
 
-pname = "rate_il2"
+pname = "up_il2"
 df_reads = pd.read_csv("data_fig2e_readouts_"+pname+".csv")
 df_timecourse = pd.read_csv("data_fig2e_timecourse_"+pname+".csv")
 df_samples = pd.read_csv("data_fig2e_lognorm_samples_"+pname+".csv")
