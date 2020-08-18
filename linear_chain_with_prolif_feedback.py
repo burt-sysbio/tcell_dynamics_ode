@@ -146,7 +146,7 @@ for dic in [d4,d5,d6]:
 
 delays = [1, 0.5, 0.1]
 delays = 2*delays
-feedbacks = 3*["feedback off"]+3*["feedback on"]
+feedbacks = 3*["Feedback off"]+3*["Feedback on"]
 dicts = [d,d2,d3,d4,d5,d6]
 time = np.arange(0,5, 0.01)
 
@@ -162,7 +162,7 @@ for dic, delay, fb in zip(dicts, delays, feedbacks):
 
 df = pd.concat(df_list)
 g = sns.relplot(data = df, x = "time", y = "cells", col = "feedback", hue = "delay", kind = "line",
-                legend = False, aspect = 1.0)
+                aspect = 0.9, legend = False)
 
 
 g.set_titles("{col_name}")

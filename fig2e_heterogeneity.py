@@ -151,29 +151,31 @@ sim2 = Simulation(name="IL2+Timer", mode=model2, parameters=d,
 df1 = sim1.run_timecourse()
 df2 = sim2.run_timecourse()
 df = pd.concat([df1, df2])
-g = sns.relplot(data = df, x = "time", y = "cells", hue = "name", kind = "line")
+g = sns.relplot(data = df, x = "time", y = "cells",
+                hue = "name", kind = "line",
+                aspect=0.8)
 plt.show()
-
-# loop over both simulations (high cv and low cv) and over both models, then draw params from lognorm dist
-# plot time course for diff uptake rates IL2 as heterogeneity from lognorm dist
-pnames = ["up_il2", "rate_il2"]
-cv_arr = [0.1, 0.5, 1.0, 10.0]
-n_samples = 100
-rep = 1
-res_cv_arr = 60
-cv_reads = np.geomspace(0.1, 10, num = res_cv_arr)
-
-# do  analysis for uptake and secretion rate of IL2
-# decrease time increment
-
-for pname in pnames:
-    # show timecourse once for samples drawn small dist. with small cv and once with large cv
-    sims = [sim1, sim2]
-    df, df_samples = lognorm_vary(sim1, sim2, cv_arr, pname, n_samples, rep)
-
-    df_samples.to_csv("data_fig2e_lognorm_samples_"+pname+".csv", index=False)
-    df.to_csv("data_fig2e_timecourse_"+pname+".csv", index=False)
-
-    # vary rate_il2 by using default mean and varying sd, then drawing from sd and compute means
-    df_readouts = sample_prolif(sim1, sim2, cv_reads, pname, n_samples)
-    df_readouts.to_csv("data_fig2e_readouts_"+pname+".csv", index=False)
+#
+# # loop over both simulations (high cv and low cv) and over both models, then draw params from lognorm dist
+# # plot time course for diff uptake rates IL2 as heterogeneity from lognorm dist
+# pnames = ["up_il2", "rate_il2"]
+# cv_arr = [0.1, 0.5, 1.0, 10.0]
+# n_samples = 100
+# rep = 1
+# res_cv_arr = 60
+# cv_reads = np.geomspace(0.1, 10, num = res_cv_arr)
+#
+# # do  analysis for uptake and secretion rate of IL2
+# # decrease time increment
+#
+# for pname in pnames:
+#     # show timecourse once for samples drawn small dist. with small cv and once with large cv
+#     sims = [sim1, sim2]
+#     df, df_samples = lognorm_vary(sim1, sim2, cv_arr, pname, n_samples, rep)
+#
+#     df_samples.to_csv("data_fig2e_lognorm_samples_"+pname+".csv", index=False)
+#     df.to_csv("data_fig2e_timecourse_"+pname+".csv", index=False)
+#
+#     # vary rate_il2 by using default mean and varying sd, then drawing from sd and compute means
+#     df_readouts = sample_prolif(sim1, sim2, cv_reads, pname, n_samples)
+#     df_readouts.to_csv("data_fig2e_readouts_"+pname+".csv", index=False)

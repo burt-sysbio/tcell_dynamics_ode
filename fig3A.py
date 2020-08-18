@@ -125,6 +125,6 @@ plt.show()
 g.savefig("plot_fig3A_readouts.svg")
 # plot time course and relative cells with feedback variation
 df8 = sim_rtm.run_timecourses(arr_dict)
-g = sim_rtm.plot_timecourses(df8, log = True, cbar_label = "feedback fold-change")
+g = sim_rtm.plot_timecourses(df8, log = True, cbar_label = "feedback fold-change", ylabel = "cells X (% of total)")
 plt.show()
 g.savefig("plot_fig3A_timecourse.pdf")

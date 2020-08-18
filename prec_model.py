@@ -420,9 +420,8 @@ class Simulation:
         return df
     
 
-    def plot_timecourses(self, df, log = False, cbar_label = "feedback strength"):
+    def plot_timecourses(self, df, log = False, cbar_label = "feedback strength", ylabel = "Tfh % of total"):
         """
-
         Parameters
         ----------
         df : TYPE
@@ -445,7 +444,7 @@ class Simulation:
             norm = matplotlib.colors.Normalize(vmin = vmin, vmax = vmax)  
         
         # make mappable for colorbar
-        cmap = "Greys"
+        cmap = "Blues"
         sm = matplotlib.cm.ScalarMappable(cmap=cmap, norm=norm)
         sm.set_array([])        
         
@@ -455,7 +454,7 @@ class Simulation:
                         aspect = 1.2)
 
 
-        g.set(ylim = (0,100), ylabel = "Tfh % of total")
+        g.set(ylim = (0,100), ylabel = ylabel)
         cbar = g.fig.colorbar(sm)
         # add colorbar       
         cbar.set_label(cbar_label)
