@@ -4,7 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 sns.set(style = "ticks", context = "poster")
 
-pname = "up_il2"
+pname = "rate_il2"
 df_reads = pd.read_csv("data_fig2e_readouts_"+pname+".csv")
 df_timecourse = pd.read_csv("data_fig2e_timecourse_"+pname+".csv")
 
@@ -28,8 +28,13 @@ plt.show()
 
 #g.savefig("plot_fig2e_timecourse.pdf")
 
+sns.set(context="paper", style = "ticks")
 fig, ax = plt.subplots(1,4, figsize = (14,3))
-hist = df_samples.hist(ax = ax)
+histo = df_samples.hist(ax = ax, color = "Grey", grid = True)
+
+for a,s in zip(ax, df_samples.columns):
+    a.set_title("CV=%s" %s)
+
 plt.show()
 
-#fig.savefig("plot_fig2e_histo.pdf")
+fig.savefig("plot_fig2e_histo.pdf")
