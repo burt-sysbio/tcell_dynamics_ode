@@ -140,12 +140,10 @@ class Simulation:
 
     def get_il2_max(self):
         """
+        NOTE: make sure to run timecourse before
         get il2 concentration over time excluding external IL2
         return IL2 total concentration and il2 external concentration
         """
-        if self.state is None:
-            self.run_timecourse()
-            print("no timecourse run yet, running timecourse...")
 
         d = dict(self.parameters)
         time = self.time
@@ -177,22 +175,23 @@ class Simulation:
         get readouts from state array
         """
         state = self.state
-        peak = readouts.get_peak(state.time, state.cells)
+        peak = readouts.get_peak_height(state.time, state.cells)
         area = readouts.get_area(state.time, state.cells)
-        tau = readouts.get_peaktime2(state.time, state.cells)
+        tau = readouts.get_peaktime(state.time, state.cells)
         decay = readouts.get_duration(state.time, state.cells)
         
         reads = [peak, area, tau, decay]
-        read_names = ["Peak", "Area", "Peaktime", "Decay"]
+        read_names = ["Peak Height", "Response Size", "Peak Time", "Decay"]
         data = {"readout" : read_names, "read_val" : reads}
         reads_df = pd.DataFrame(data = data)
         reads_df["name"] = self.name
-        
+
+        # deprecated, use only to compare menten vs threshold models
         if "menten" in self.mode.__name__ :
             modelname = "menten"
         else:
             modelname =  "thres"
-            
+        #
         reads_df["model_name"] = modelname
         
         return reads_df
@@ -217,8 +216,6 @@ class Simulation:
             self.parameters[pname] = val 
             self.run_timecourse()    
             read = self.get_readouts()
-            #print(val)
-            #print(read)
             read["p_val"] = val
             readout_list.append(read)
 
@@ -437,14 +434,13 @@ class SimList:
         return SimList(sim_list_red)
     
     
-    def get_readout(self, name):
+    def get_readouts(self):
         readout_list = []
         for sim in self.sim_list:
+            sim.run_timecourse()
             df = sim.get_readouts()
-            # check that readout name is actually available since I change readouts sometimes
-            assert name in df.readout.values
-            out = float(df.read_val[df.readout == name])
-            readout_list.append(out)
+            readout_list.append(df)
+
         return readout_list
     
     

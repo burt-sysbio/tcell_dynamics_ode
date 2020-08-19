@@ -111,7 +111,7 @@ def get_cells(state, time, d):
     df["time"] = time
     return df
 
-d = {
+d1 = {
      "alpha_naive" : 1,
      "beta" : 1,
      "div_naive" : 0,
@@ -126,47 +126,61 @@ d = {
      "deg_myc" : 0.1,
      }
 
-d2 =dict(d)
-d2["alpha_naive"] = 2
-d2["beta"] = 2
+d2 =dict(d1)
+d2["alpha_naive"] = 5
+d2["beta"] = 5
 
-d3 = dict(d)
-d3["alpha_naive"] = 10
-d3["beta"] = 10
+d3 = dict(d1)
+d3["alpha_naive"] = 50
+d3["beta"] = 50
 
-fb_stren = 2.5
+fb_pos = 5.0
+fb_neg = 0.1
 
 
-d4 = dict(d)
-d5 = dict(d2)
-d6 = dict(d3)
+d_fb_pos1 = dict(d1)
+d_fb_pos2 = dict(d2)
+d_fb_pos3 = dict(d3)
+d_fb_neg1 = dict(d1)
+d_fb_neg2 = dict(d2)
+d_fb_neg3 = dict(d3)
 
-for dic in [d4,d5,d6]:
-    dic["fb_strength"] = fb_stren
+d_fb_off = [d1,d2,d3]
+d_fb_pos = [d_fb_pos1, d_fb_pos2, d_fb_pos3]
+d_fb_neg = [d_fb_neg1, d_fb_neg2, d_fb_neg3]
 
-delays = [1, 0.5, 0.1]
-delays = 2*delays
-feedbacks = 3*["Feedback off"]+3*["Feedback on"]
-dicts = [d,d2,d3,d4,d5,d6]
-time = np.arange(0,5, 0.01)
+for d1, d2 in zip(d_fb_pos, d_fb_neg):
+    d1["fb_strength"] = fb_pos
+    d2["fb_strength"] = fb_neg
+
+labels = ["No Delay", "Small Delay", "Strong Delay"]
+feedbacks = ["No Feedback", "Pos Feedback", "Neg Feedback"]
+dict_list = [d_fb_off, d_fb_pos, d_fb_neg]
+
+time = np.arange(0,7, 0.01)
 
 df_list = []
-for dic, delay, fb in zip(dicts, delays, feedbacks):
-    state = run_model(time, dic)
-    cells = get_cells(state, time, dic)
-    cells = pd.melt(cells, id_vars = ["time"], value_name= "cells", var_name= "celltype")
-    cells = cells[cells.celltype == "eff"]
-    cells["delay"] = delay
-    cells["feedback"] = fb
-    df_list.append(cells)
+for dic, feedback in zip(dict_list, feedbacks):
+    for d, label in zip(dic, labels):
+        state = run_model(time, d)
+        cells = get_cells(state, time, d)
+        cells = pd.melt(cells, id_vars = ["time"], value_name= "cells", var_name= "celltype")
+        cells = cells[cells.celltype == "eff"]
+        cells["name"] = label
+        cells["feedback"] = feedback
+        df_list.append(cells)
 
 df = pd.concat(df_list)
-g = sns.relplot(data = df, x = "time", y = "cells", col = "feedback", hue = "delay", kind = "line",
-                aspect = 0.9, legend = False)
+g = sns.relplot(data = df, x = "time", y = "cells", col = "feedback", hue = "name",
+                kind = "line", aspect = 0.9, palette= "Blues",
+                facet_kws={"sharey":False})
 
 
 g.set_titles("{col_name}")
-g.set(ylabel = "cell dens. norm.", xlabel = "time (a.u.)")
+g.set(ylabel = "effector cells (a.u.)",
+      xlabel = "time (a.u.)")
+
 plt.show()
-g.savefig("plot_delay_fb_tc.pdf")
-g.savefig("plot_delay_fb_tc.svg")
+
+#g.savefig("plot_delay_fb_tc.pdf")
+#g.savefig("plot_delay_fb_tc.svg")

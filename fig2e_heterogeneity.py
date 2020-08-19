@@ -20,11 +20,12 @@ def dummy(sim, sample, pname, n):
     simlist = make_sim_list(sim, n)
     simlist = change_param(simlist, pname, sample)
     exp = SimList(simlist)
+    return exp
+
+
+def dummy2(exp):
+
     df = exp.run_timecourses()
-    return df
-
-
-def dummy2(df):
     # get std peakmaxima and peaktimes first sim
     index = df.groupby("name").cells.max()
     max_values = index.values
@@ -35,6 +36,24 @@ def dummy2(df):
     mean_peaktimes = peaktimes.mean()
 
     return np.array([mean_max, sd_max, mean_peaktimes, sd_peaktimes])
+
+
+def dummy3(exp):
+    """
+    get readouts from experiments and compute means and standard deviation for each readout
+    return as flat array for stacking
+    """
+    reads = exp.get_readouts()
+    reads = pd.concat(reads)
+    means = reads.groupby("readout")["read_val"].mean()
+    sds = reads.groupby("readout")["read_val"].std()
+
+    readouts = ["Peak Height", "Peak Time", "Response Size"]
+    means = means[readouts]
+    sds = sds[readouts]
+    arr = np.concatenate((means, sds))
+    return arr
+
 
 def sample_prolif(sim1, sim2, cv_arr, pname, n_samples):
     """
@@ -47,18 +66,21 @@ def sample_prolif(sim1, sim2, cv_arr, pname, n_samples):
 
     for sd in sd_array:
         sample = sim1.gen_lognorm_params(pname, sd, n_samples)
-        df1 = dummy(sim1, sample, pname, len(sample))
-        df2 = dummy(sim2, sample, pname, len(sample))
-        reads1 = dummy2(df1)
-        reads2 = dummy2(df2)
+        exp1 = dummy(sim1, sample, pname, len(sample))
+        exp2 = dummy(sim2, sample, pname, len(sample))
+        reads1 = dummy3(exp1)
+        reads2 = dummy3(exp2)
 
+        #dummy3(exp1)
         reads1_list.append(reads1)
         reads2_list.append(reads2)
 
     # format output into one single data frame
     arr1 = np.stack(reads1_list)
     arr2 = np.stack(reads2_list)
-    colnames = ["Peak Mean", "Peak SD", "Peaktime Mean", "Peaktime SD"]
+    colnames = ["Mean Peak Height", "Mean Peak Time", "Mean Response Size",
+                "SD Peak Height", "SD Peak Time", "SD Response Size"]
+
     df1 = pd.DataFrame(arr1, columns = colnames)
     df2 = pd.DataFrame(arr2, columns = colnames)
     df1["CV"] = cv_arr
@@ -85,8 +107,10 @@ def lognorm_vary(sim1, sim2, cv_arr, pname, n_samples, n_repeats):
             # draw samples from lognorm dist for 2 parameters
             sample = sim1.gen_lognorm_params(pname, sd, n_samples)
             sample_arr = np.append(sample_arr, sample)
-            df1 = dummy(sim1, sample, pname, len(sample))
-            df2 = dummy(sim2, sample, pname, len(sample))
+            exp1 = dummy(sim1, sample, pname, len(sample))
+            exp2 = dummy(sim2, sample, pname, len(sample))
+            df1 = exp1.run_timecourses()
+            df2 = exp2.run_timecourses()
             # same for sim2
             df = pd.concat([df1, df2])
             df["rep"] = i
@@ -156,26 +180,26 @@ g = sns.relplot(data = df, x = "time", y = "cells",
                 aspect=0.8)
 plt.show()
 #
-# # loop over both simulations (high cv and low cv) and over both models, then draw params from lognorm dist
-# # plot time course for diff uptake rates IL2 as heterogeneity from lognorm dist
-# pnames = ["up_il2", "rate_il2"]
-# cv_arr = [0.1, 0.5, 1.0, 10.0]
-# n_samples = 100
-# rep = 1
-# res_cv_arr = 60
-# cv_reads = np.geomspace(0.1, 10, num = res_cv_arr)
-#
-# # do  analysis for uptake and secretion rate of IL2
-# # decrease time increment
-#
-# for pname in pnames:
-#     # show timecourse once for samples drawn small dist. with small cv and once with large cv
-#     sims = [sim1, sim2]
-#     df, df_samples = lognorm_vary(sim1, sim2, cv_arr, pname, n_samples, rep)
-#
-#     df_samples.to_csv("data_fig2e_lognorm_samples_"+pname+".csv", index=False)
-#     df.to_csv("data_fig2e_timecourse_"+pname+".csv", index=False)
-#
-#     # vary rate_il2 by using default mean and varying sd, then drawing from sd and compute means
-#     df_readouts = sample_prolif(sim1, sim2, cv_reads, pname, n_samples)
-#     df_readouts.to_csv("data_fig2e_readouts_"+pname+".csv", index=False)
+# loop over both simulations (high cv and low cv) and over both models, then draw params from lognorm dist
+# plot time course for diff uptake rates IL2 as heterogeneity from lognorm dist
+pnames = ["rate_il2"]
+cv_arr = [0.1, 1.0, 10.0]
+n_samples = 50
+rep = 1
+res_cv_arr = 30
+cv_reads = np.geomspace(1, 10, num = res_cv_arr)
+
+# do  analysis for uptake and secretion rate of IL2
+# decrease time increment
+
+for pname in pnames:
+    # show timecourse once for samples drawn small dist. with small cv and once with large cv
+    sims = [sim1, sim2]
+    df, df_samples = lognorm_vary(sim1, sim2, cv_arr, pname, n_samples, rep)
+
+    df_samples.to_csv("data_fig2e_lognorm_samples_"+pname+".csv", index=False)
+    df.to_csv("data_fig2e_timecourse_"+pname+".csv", index=False)
+
+    # vary rate_il2 by using default mean and varying sd, then drawing from sd and compute means
+    df_readouts = sample_prolif(sim1, sim2, cv_reads, pname, n_samples)
+    df_readouts.to_csv("data_fig2e_readouts_"+pname+".csv", index=False)

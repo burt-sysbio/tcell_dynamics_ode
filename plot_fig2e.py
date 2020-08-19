@@ -17,24 +17,27 @@ df_tidy = pd.melt(df_reads, id_vars = ["name", "CV"], value_name = "effect_size"
 g = sns.relplot(data = df_tidy, x = "CV", y = "effect_size",
                  col = "readout", hue = "name",
                  facet_kws= {"sharey" : False})
-g.set(xscale = "log", xlim = (0.1,10))
+g.set(xscale = "log", xlim = (0.1,10), ylabel = "effect size")
+g.set_titles("{col_name}")
 plt.show()
 #g.savefig("plot_fig2e_readouts.pdf")
 
 # timecourse plot
-g = sns.relplot(data = df_timecourse, x = "time", y = "cells", hue = "model_name",
-                col = "CV", kind = "line", ci = "sd")
+g = sns.relplot(data = df_timecourse, x = "time", y = "cells", row = "model_name",
+                col = "CV", kind = "line", ci = "sd", color = "k")
+g.set(xlim=(0,8))
+g.set_titles("")
 plt.show()
 
-#g.savefig("plot_fig2e_timecourse.pdf")
+g.savefig("plot_fig2e_timecourse.pdf")
 
 sns.set(context="paper", style = "ticks")
-fig, ax = plt.subplots(1,4, figsize = (14,3))
-histo = df_samples.hist(ax = ax, color = "Grey", grid = True)
+fig, ax = plt.subplots(1,3, figsize = (14,3))
+histo = df_samples.hist(ax = ax, color = "Grey", grid = False)
 
 for a,s in zip(ax, df_samples.columns):
     a.set_title("CV=%s" %s)
 
 plt.show()
 
-fig.savefig("plot_fig2e_histo.pdf")
+#fig.savefig("plot_fig2e_histo.pdf")

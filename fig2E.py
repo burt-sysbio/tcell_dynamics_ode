@@ -71,7 +71,7 @@ g = sns.relplot(data = df, x = "time", y = "cells", hue = "name", kind = "line")
 # set up parameters
 res = 50
 lo = 1
-hi = 1e15
+hi = 1e5
 il2_arr = np.geomspace(lo, hi, res)
 arr_name = "IL2 ext. (a.u.)"
 pname = "c_il2_ex"
@@ -86,7 +86,7 @@ flat_list = [item for sublist in simlist3 for item in sublist]
 # plot timecourses
 exp = SimList(flat_list)
 g, data = exp.plot_timecourses(il2_arr, arr_name, log = True, log_scale = True)
-g.set(title = "", ylim = (1,1000), xlim = (0,12))
+g.set(title = "", ylim = (1,3e2), xlim = (0,12))
 
 # add additional lineplot for default values
 for ax, sim in zip(g.axes.flat, simlist):
@@ -95,7 +95,7 @@ for ax, sim in zip(g.axes.flat, simlist):
                  data = df, ax = ax)
 plt.show()
 
-#g.savefig("../figures/fig2/fig2E_timecourse.svg")
+g.savefig("fig2f_timecourse.svg")
 # =============================================================================
 # without heterogeneity, vary peaktime in both models
 # =============================================================================
@@ -107,8 +107,10 @@ df = df[df.readout != "Decay"]
 g = sns.relplot(data = df, x = "p_val", y = "log2FC", col = "name", kind = "line",
                 hue = "readout", facet_kws = {"despine" : False, "legend_out" : False})
 g.set(xscale = "log")
-g.set(xlabel = "IL2 ext. (a.u.)", xlim = (lo, hi), ylim = (None, None), ylabel = "effect size")
+g.set(xlabel = "IL2 ext. (a.u.)",
+      xlim = (lo, hi), ylim = (0, 1.0),
+      ylabel = "effect size")
 
 g.set_titles("{col_name}")
-#g.savefig("../figures/fig2/fig2E_readouts.svg")
+g.savefig("plot_fig2f_readouts.svg")
 plt.show()

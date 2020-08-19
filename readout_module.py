@@ -28,7 +28,7 @@ def get_maximum(x, y):
     return max_x, max_y
 
 
-def get_peaktime(time, cells):
+def get_tau(time, cells):
     """
     get halftime of peak
     """
@@ -62,8 +62,11 @@ def get_peaktime(time, cells):
 
 
 
-def get_peak(time, cells):
-    cells = cells.array 
+def get_peak_height(time, cells):
+    """
+    get height of peak
+    """
+    cells = cells.array
     time = time.array
     crit = check_criteria(cells)
 
@@ -76,7 +79,7 @@ def get_peak(time, cells):
 
 
 
-def get_peaktime2(time, cells):
+def get_peaktime(time, cells):
     """
     get time of peak
     """
