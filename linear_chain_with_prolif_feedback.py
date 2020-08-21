@@ -164,14 +164,29 @@ for dic, feedback in zip(dict_list, feedbacks):
     for d, label in zip(dic, labels):
         state = run_model(time, d)
         cells = get_cells(state, time, d)
-        cells = pd.melt(cells, id_vars = ["time"], value_name= "cells", var_name= "celltype")
-        cells = cells[cells.celltype == "eff"]
+        #cells = pd.melt(cells, id_vars = ["time"], value_name= "cells", var_name= "celltype")
+        cells = cells[["time", "eff"]]
         cells["name"] = label
         cells["feedback"] = feedback
         df_list.append(cells)
 
+# combine
 df = pd.concat(df_list)
-g = sns.relplot(data = df, x = "time", y = "cells", col = "feedback", hue = "name",
+
+# normalize to no delay maximum for all feedback conditions
+# dummy column
+df["norm"] = 1
+maxima = df.groupby(["name", "feedback"])["eff"].max()
+# only maxima for no delay
+maxima = maxima["No Delay"]
+# set norm column according to maxima and divide effector cells by this val
+for fb in feedbacks:
+    m = maxima[fb]
+    df.loc[df.feedback == fb,"norm"] = m
+
+df["eff_norm"] = df.eff / df.norm
+
+g = sns.relplot(data = df, x = "time", y = "eff_norm", col = "feedback", hue = "name",
                 kind = "line", aspect = 0.9, palette= "Blues",
                 facet_kws={"sharey":False})
 

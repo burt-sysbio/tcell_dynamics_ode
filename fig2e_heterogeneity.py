@@ -183,8 +183,8 @@ plt.show()
 # loop over both simulations (high cv and low cv) and over both models, then draw params from lognorm dist
 # plot time course for diff uptake rates IL2 as heterogeneity from lognorm dist
 pnames = ["rate_il2"]
-cv_arr = [0.1, 1.0, 10.0]
-n_samples = 50
+cv_arr = [0.5, 1.0, 2.0]
+n_samples = 200
 rep = 1
 res_cv_arr = 30
 cv_reads = np.geomspace(1, 10, num = res_cv_arr)
@@ -201,5 +201,5 @@ for pname in pnames:
     df.to_csv("data_fig2e_timecourse_"+pname+".csv", index=False)
 
     # vary rate_il2 by using default mean and varying sd, then drawing from sd and compute means
-    df_readouts = sample_prolif(sim1, sim2, cv_reads, pname, n_samples)
-    df_readouts.to_csv("data_fig2e_readouts_"+pname+".csv", index=False)
+    #df_readouts = sample_prolif(sim1, sim2, cv_reads, pname, n_samples)
+    #df_readouts.to_csv("data_fig2e_readouts_"+pname+".csv", index=False)

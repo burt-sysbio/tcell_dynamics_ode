@@ -20,14 +20,13 @@ g = sns.relplot(data = df_tidy, x = "CV", y = "effect_size",
 g.set(xscale = "log", xlim = (0.1,10), ylabel = "effect size")
 g.set_titles("{col_name}")
 plt.show()
-g.savefig("fig2e_readouts.pdf")
+#g.savefig("fig2e_readouts.pdf")
 
-reads_filter = ["Mean Peak Height", "SD Peak Height", "Mean Response Size"]
+reads_filter = ["Mean Peak Height", "SD Peak Height"]
 df_tidy_filtered = df_tidy[df_tidy.readout.isin(reads_filter)]
 
 g = sns.relplot(data = df_tidy_filtered, x = "CV", y = "effect_size",
-                 col = "readout", hue = "name", palette= ["k", "Grey"],
-                 facet_kws= {"sharey" : False})
+                 col = "readout", hue = "name", facet_kws= {"sharey" : False})
 g.set(xscale = "log", xlim = (0.1,10), ylabel = "effect size")
 g.set_titles("{col_name}")
 plt.show()
@@ -36,7 +35,7 @@ g.savefig("fig2e_readouts_filtered.svg")
 
 # timecourse plot
 g = sns.relplot(data = df_timecourse, x = "time", y = "cells", row = "model_name",
-                col = "CV", kind = "line", ci = "sd", color = "k")
+                col = "CV", kind = "line", ci = "sd")
 g.set(xlim=(0,8), ylabel = "effector cells")
 g.set_titles("")
 plt.show()
@@ -44,14 +43,17 @@ plt.show()
 g.savefig("fig2e_timecourse.pdf")
 
 #sns.set(context="paper", style = "ticks")
-fig, ax = plt.subplots(1,3, figsize = (14,4))
-histo = df_samples.hist(ax = ax, color = "Grey", grid = False)
-for a in ax:
-    a.set_xlabel("IL2 secretion rate")
-
-for a,s in zip(ax, df_samples.columns):
-    a.set_title("CV=%s" %s)
-
+fig, axes = plt.subplots(1,3, figsize = (14,4))
+bins = [5,8,20]
+for i, bin, s in zip(range(3), bins, df_samples.columns):
+    x = df_samples.iloc[:,i]
+    axes[i].hist(x, bins = bin, weights=np.zeros_like(x) + 1. / x.size)
+    axes[i].set_xlim(0,3.5)
+    axes[i].set_ylim(0,0.6)
+    axes[i].set_ylabel("rel. frequency")
+    axes[i].set_xlabel("IL2 secretion rate")
+    axes[i].set_title("CV=%s" %s)
 plt.show()
+
 
 fig.savefig("fig2e_histo.pdf")
