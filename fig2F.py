@@ -86,7 +86,7 @@ flat_list = [item for sublist in simlist3 for item in sublist]
 # plot timecourses
 exp = SimList(flat_list)
 g, data = exp.plot_timecourses(il2_arr, arr_name, log = True, log_scale = True)
-g.set(title = "", ylim = (1,3e2), xlim = (0,12))
+g.set(title = "", ylim = (1,3e2), xlim = (0,10))
 
 # add additional lineplot for default values
 for ax, sim in zip(g.axes.flat, simlist):
@@ -112,5 +112,5 @@ g.set(xlabel = "IL2 ext. (a.u.)",
       ylabel = "effect size")
 
 g.set_titles("{col_name}")
-g.savefig("plot_fig2f_readouts.svg")
+#g.savefig("fig2f_readouts.svg")
 plt.show()

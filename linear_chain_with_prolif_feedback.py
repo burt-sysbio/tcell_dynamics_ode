@@ -154,8 +154,8 @@ for d1, d2 in zip(d_fb_pos, d_fb_neg):
     d2["fb_strength"] = fb_neg
 
 labels = ["No Delay", "Small Delay", "Strong Delay"]
-feedbacks = ["No Feedback", "Pos Feedback", "Neg Feedback"]
-dict_list = [d_fb_off, d_fb_pos, d_fb_neg]
+feedbacks = ["No Feedback", "Neg Feedback", "Pos Feedback"]
+dict_list = [d_fb_off, d_fb_neg, d_fb_pos]
 
 time = np.arange(0,7, 0.01)
 
@@ -182,5 +182,5 @@ g.set(ylabel = "effector cells (a.u.)",
 
 plt.show()
 
-#g.savefig("plot_delay_fb_tc.pdf")
-#g.savefig("plot_delay_fb_tc.svg")
+g.savefig("plot_delay_fb_tc.pdf")
+g.savefig("plot_delay_fb_tc.svg")
