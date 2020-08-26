@@ -201,4 +201,4 @@ g.set(ylabel="effector cells (a.u.)",
 plt.show()
 
 # g.savefig("plot_delay_fb_tc.pdf")
-# g.savefig("plot_delay_fb_tc.svg")
+g.savefig("plot_delay_const_death.svg")

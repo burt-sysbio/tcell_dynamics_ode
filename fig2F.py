@@ -4,6 +4,8 @@
 Created on Wed Jan 29 09:02:12 2020
 
 @author: burt
+make perturbation simulation with external IL2 source that is added at beginning of simulation 
+models: IL2, IL2+timer
 """
 
 from exp_fig_2e import Simulation, SimList, make_sim_list, change_param

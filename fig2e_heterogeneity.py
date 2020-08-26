@@ -1,5 +1,6 @@
 """
-draw parameter values from lognorm dist with constant mean and look at systems behavior
+analyse effect of heterogeneous IL2 secretion on IL2 and IL2+timer model
+draw secretion rates from lognorm dist with constant mean and look at systems behavior
 first look at time courses for large and small CV
 then vary CV systematically and quantify
 """

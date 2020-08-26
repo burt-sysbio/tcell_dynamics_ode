@@ -161,7 +161,7 @@ labels = ["No Delay", "Small Delay", "Strong Delay"]
 feedbacks = ["No Feedback", "Neg. Feedback", "Pos. Feedback"]
 dict_list = [d_fb_off, d_fb_neg, d_fb_pos]
 
-time = np.arange(0, 1, 0.01)
+time = np.arange(0, 4, 0.01)
 
 df_list = []
 for dic, feedback in zip(dict_list, feedbacks):
@@ -200,5 +200,4 @@ g.set(ylabel="effector cells (a.u.)",
 
 plt.show()
 
-# g.savefig("plot_delay_fb_tc.pdf")
-# g.savefig("plot_delay_fb_tc.svg")
+g.savefig("plot_delay_no_death.svg")

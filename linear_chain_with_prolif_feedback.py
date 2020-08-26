@@ -4,7 +4,10 @@
 Created on Mon Aug 10 16:38:50 2020
 
 @author: burt
-one simple diff x--> y with differentiation
+purpose: show that delays matter when feedbacks are involved
+motif: simple differentiation + proliferation circuit naive--> effectors
+feedback on effector proliferation
+effector cells die. death rate increases linearly with time
 """
 
 import numpy as np
@@ -197,5 +200,5 @@ g.set(ylabel = "effector cells (a.u.)",
 
 plt.show()
 
-#g.savefig("plot_delay_fb_tc.pdf")
-#g.savefig("plot_delay_fb_tc.svg")
+g.savefig("plot_delay_timed_death.svg")
+#g.savefig("plot_delay_timed_death.svg")

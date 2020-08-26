@@ -1,3 +1,6 @@
+
+# plot output genereated for figure fig2e (heterogeneity analysis IL2 secretion)
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
