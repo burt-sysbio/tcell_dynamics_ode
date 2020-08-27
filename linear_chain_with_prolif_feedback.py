@@ -99,8 +99,6 @@ def run_model(time, d):
     return state
 
 
-
-
 def get_cells(state, time, d):
 
     naive = state[:,:d["alpha_naive"]]
