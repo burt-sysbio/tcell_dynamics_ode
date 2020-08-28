@@ -223,8 +223,8 @@ g.set_titles("{col_name}")
 g.set(ylabel = "effector cells (a.u.)",
       xlabel = "time (a.u.)")
 plt.show()
-
-
+g.savefig("feedback_delay_timer_il2.svg")
 g = sns.relplot(data= molecules, x = "time", y = "conc. (a.u.)", row = "Molecule", hue = "name",
                 col = "feedback", facet_kws= {"sharey" : False}, kind = "line")
 plt.show()
+
