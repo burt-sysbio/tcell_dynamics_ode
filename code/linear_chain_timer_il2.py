@@ -9,6 +9,7 @@ from scipy.integrate import odeint
 import seaborn as sns
 import pandas as pd
 import matplotlib.pyplot as plt
+from readout_module import get_area
 
 sns.set(style="ticks", context="poster")
 
@@ -73,8 +74,14 @@ def simple_chain(state, time, d):
     signal_myc = pos_fb(myc, d["EC50_myc"]) if myc >= 0 else 0
     signal_il2_myc = np.sqrt(signal_il2*signal_myc)
 
+    if d["mode"] == "il2" :
+        signal = signal_il2
+    elif d["mode"] == "timer" :
+        signal = signal_myc
+    else:
+        signal = signal_il2_myc
     # prolif rate is comb of feedback and il2+myc signals
-    beta_p = d["beta_p"] * signal_il2_myc *prob_fb(n_eff, d["fb_strength"], d["fb_EC50"])
+    beta_p = d["beta_p"] * signal*prob_fb(n_eff, d["fb_strength"], d["fb_EC50"])
     # algebraic relations feedback
     beta = d["beta"]
     influx_eff = naive[-1] * beta
@@ -123,7 +130,8 @@ def get_molecules(state, time, d):
     df = df.melt(id_vars= ["time"], value_name= "conc. (a.u.)", var_name="Molecule")
     return df
 
-
+# parameters
+mode = "myc"
 d1 = {
      "alpha_naive" : 1,
      "beta" : 1,
@@ -139,7 +147,8 @@ d1 = {
      "deg_myc" : 0.5,
     "r_il2" : 1,
     "up_il2" : 1,
-    "EC50_il2" : 0.3
+    "EC50_il2" : 0.3,
+    "mode" : mode,
      }
 
 
@@ -154,20 +163,12 @@ d3["beta"] = 50
 fb_pos = 10.0
 fb_neg = 0.1
 
-
 d_fb_pos1 = dict(d1)
 d_fb_pos2 = dict(d2)
 d_fb_pos3 = dict(d3)
 d_fb_neg1 = dict(d1)
 d_fb_neg2 = dict(d2)
 d_fb_neg3 = dict(d3)
-
-time = np.arange(0,6, 0.01)
-
-
-
-
-
 
 d_fb_off = [d1,d2,d3]
 d_fb_pos = [d_fb_pos1, d_fb_pos2, d_fb_pos3]
@@ -183,39 +184,77 @@ dict_list = [d_fb_off, d_fb_neg, d_fb_pos]
 
 time = np.arange(0,7, 0.01)
 
-cells_list = []
-molecules_list = []
-for dic, feedback in zip(dict_list, feedbacks):
-    for d, label in zip(dic, labels):
-        state = run_model(time, d)
-        cells = get_cells(state, time, d)
-        molecules = get_molecules(state, time, d)
-        cells = cells[["time", "eff"]]
-        cells["name"] = label
-        molecules["name"] = label
-        cells["feedback"] = feedback
-        molecules["feedback"] = feedback
-        cells_list.append(cells)
-        molecules_list.append(molecules)
+modes = ["timer", "il2", "timer_il2"]
 
-# combine
-cells = pd.concat(cells_list)
-molecules = pd.concat(molecules_list)
+df_list = []
+df2_list = []
 
-# normalize to no delay maximum for all feedback conditions
-# dummy column
-#df["norm"] = 1
-#maxima = df.groupby(["name", "feedback"])["eff"].max()
-# only maxima for no delay
-#maxima = maxima["No Delay"]
-# set norm column according to maxima and divide effector cells by this val
-#for fb in feedbacks:
-#    m = maxima[fb]
-#    df.loc[df.feedback == fb,"norm"] = m
+# run pipeline for all models
+for mode in modes:
+    cells_list = []
+    molecules_list = []
+    # run pipeline for all feedback and all delay types
+    for dic, feedback in zip(dict_list, feedbacks):
+        for d, label in zip(dic, labels):
+            d["mode"] = mode
+            state = run_model(time, d)
+            cells = get_cells(state, time, d)
+            molecules = get_molecules(state, time, d)
+            cells = cells[["time", "eff"]]
+            cells["name"] = label
+            molecules["name"] = label
+            cells["feedback"] = feedback
+            molecules["feedback"] = feedback
+            cells_list.append(cells)
+            molecules_list.append(molecules)
 
-#df["eff_norm"] = df.eff / df.norm
+    # combine
+    cells = pd.concat(cells_list)
+    molecules = pd.concat(molecules_list)
 
-g = sns.relplot(data = cells, x = "time", y = "eff", col = "feedback", hue = "name",
+    # normalize to no delay maximum for all feedback conditions
+    maxima = cells.groupby(["name", "feedback"])["eff"].max()
+    maxima = maxima["No Delay"]
+    cells = pd.merge(cells, maxima, how = "left", on = "feedback")
+    cells["norm"] = cells.eff_x / cells.eff_y
+    cells["mode"] = mode
+    df_list.append(cells)
+
+    # systematic feedback analysis
+    fb_arr = np.geomspace(1.0,10,50)
+    fb_1 = []
+    fb_2 = []
+    fb_3 = []
+    fb_list = [fb_1, fb_2, fb_3]
+
+    # for all delay types vary feedback strength
+    for d, label, l in zip(dic, labels, fb_list):
+        # for each fb value get resposne size
+        for fb in fb_arr:
+            d["fb_strength"] = fb
+            state = run_model(time, d)
+            cells = get_cells(state, time, d)
+            cells = cells[["time", "eff"]]
+            area = get_area(time, cells.eff)
+
+            l.append(area)
+
+    df = pd.DataFrame({"no_delay" : fb_list[0],
+                       "small_delay" : fb_list[1],
+                       "high_delay" : fb_list[2],
+                      "fb_fc" : fb_arr})
+
+    df = df.melt(id_vars= "fb_fc", value_name= "population response", var_name = "delay")
+    df["mode"] = mode
+    df2_list.append(df)
+
+cells = pd.concat(df_list)
+df_fb = pd.concat(df2_list)
+
+g = sns.relplot(data = cells, x = "time", y = "norm",
+                row = "feedback",
+                col = "mode",
+                hue = "name",
                 kind = "line", aspect = 0.9, palette= "Blues",
                 facet_kws={"sharey":False})
 
@@ -223,8 +262,18 @@ g.set_titles("{col_name}")
 g.set(ylabel = "effector cells (a.u.)",
       xlabel = "time (a.u.)")
 plt.show()
-g.savefig("feedback_delay_timer_il2.svg")
-g = sns.relplot(data= molecules, x = "time", y = "conc. (a.u.)", row = "Molecule", hue = "name",
-                col = "feedback", facet_kws= {"sharey" : False}, kind = "line")
+
+g.savefig("../figures/fb_delay_timecourse.pdf")
+g.savefig("../figures/fb_delay_timecourse.svg")
+
+g = sns.relplot(data = df_fb, x = "fb_fc", y = "population response",
+                hue = "delay",
+                col = "mode",
+                kind = "line",
+                palette= "Blues")
+g.set(xscale = "log", ylim = (0, 30))
 plt.show()
 
+
+g.savefig("../figures/fb_delay_analysis.pdf")
+g.savefig("../figures/fb_delay_analysis.svg")
