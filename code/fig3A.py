@@ -31,8 +31,8 @@ d = {
      "alpha_tfh": 10,
      "beta_naive" : 10,
      "beta_prec" : 10,
-     "beta_p_th1" : 10,
-     "beta_p_tfh" :10,
+     "beta_p_th1" : 0,
+     "beta_p_tfh" :0,
      "beta_m_th1" : 0,
      "beta_m_tfh" : 0,
      "n_div_eff" : 1,
@@ -58,73 +58,81 @@ d = {
      "deg_il10" : 1,
      }
 
-
+d2 = dict(d)
 # set parameters specific to this condition
-d["beta_p_th1"] = 0
-d["beta_p_tfh"] = 0
-d["p_prec"] = 0.2
-d["n_div_prec"] = 1
+d2["p_prec"] = 0
+d2["n_div_prec"] = 0
+d2["beta_p_th1"] = 10
+d2["beta_p_tfh"] = 10
 
-
-d_rate = dict(d)
-params = ["alpha_naive", "alpha_prec", "alpha_th1", "alpha_tfh", "beta_naive",
-          "beta_prec"]
-
-for p in params:
-    d_rate[p] = 1
-d_rate["beta_p_th1"] = d["beta_p_th1"] / 10
-d_rate["beta_p_tfh"] = d["beta_p_tfh"] / 10
-
-d_fb = dict(d)
-d_fb["fb_il10_prob_th1"] = 10
+d_list = [d, d2]
+modes = ["eff prolif", "prec prolif"]
+df_list1 = []
+df_list2 = []
 
 time = np.arange(0,12,0.01)
 
-# set up simulations
-sim_rate = Simulation("alpha=1", prec_model, d_rate, celltypes, time)
-sim_rtm = Simulation("alpha=10", prec_model, d, celltypes, time)
-sim_fb = Simulation("fb on", prec_model, d_fb, celltypes, time)
-sim_rate.run_timecourse()
-sim_rtm.run_timecourse()
-sim_fb.run_timecourse()
+# run pipeline for eff prolif and prec prolif models
+for dic, mode in zip(d_list, modes):
 
-# plot timecourse for simulations
-df = pd.concat([sim_rtm.state_tidy, sim_fb.state_tidy])
-df = filter_cells(df, names = ["Th1", "Tfh", "Prec", "Total"])
-g = sns.relplot(
-    data = df, x = "time", y = "cells", 
-    hue = "cell_type", kind = "line",
-    style = "sim_name", legend = False, aspect = 1.2)
+    d_rate = dict(dic)
+    params = ["alpha_naive", "alpha_prec", "alpha_th1", "alpha_tfh", "beta_naive",
+              "beta_prec"]
 
-plt.show()
-#g.savefig("fig3A_1.svg")
-arr_dict = {"fb_ifng_prob_th1" : np.geomspace(1,100,50), 
-            "fb_il21_prob_th1" : np.geomspace(1,100,50)}
+    # adjust rate parameters
+    for p in params:
+        d_rate[p] = 1
+    d_rate["beta_p_th1"] = d["beta_p_th1"] / 10
+    d_rate["beta_p_tfh"] = d["beta_p_tfh"] / 10
 
-# vary parameters
-df = sim_rate.vary_param(arr_dict)
-df2 = sim_rtm.vary_param(arr_dict)
+    # set up simulations
+    sim_rate = Simulation("alpha=1", prec_model, d_rate, celltypes, time)
+    sim_rtm = Simulation("alpha=10", prec_model, dic, celltypes, time)
+    sim_rate.run_timecourse()
+    sim_rtm.run_timecourse()
 
-# get relative readouts
-df3 = sim_rate.get_relative_readouts(df)
-df4 = sim_rtm.get_relative_readouts(df2)
+    arr_dict = {"fb_ifng_prob_th1" : np.geomspace(1,100,50),
+                "fb_il21_prob_tfh" : np.geomspace(1,100,50)}
 
-# normalize
-df5 = sim_rate.normalize_readout_df(df3, norm_idx = 0)
-df6 = sim_rtm.normalize_readout_df(df4, norm_idx = 0)
+    # vary parameters
+    df = sim_rate.vary_param(arr_dict)
+    df2 = sim_rtm.vary_param(arr_dict)
 
-# combine
-df7 = pd.concat([df5, df6])
-df7 = df7.melt(id_vars = ["param_val", "sim_name", "param_name"], value_name = "effect size", var_name = "readout")
+    # get relative readouts
+    df3 = sim_rate.get_relative_readouts(df)
+    df4 = sim_rtm.get_relative_readouts(df2)
 
+    # normalize
+    df5 = sim_rate.normalize_readout_df(df3, norm_idx = 0)
+    df6 = sim_rtm.normalize_readout_df(df4, norm_idx = 0)
+
+    # combine
+    df7 = pd.concat([df5, df6])
+    df7 = df7.melt(id_vars = ["param_val", "sim_name", "param_name"], value_name = "effect size", var_name = "readout")
+
+    # run timecourse (only for rtm)
+    df8 = sim_rtm.run_timecourses(arr_dict)
+
+    df7["mode"] = mode
+    df8["mode"] = mode
+
+    df_list1.append(df7)
+    df_list2.append(df8)
+
+df1 = pd.concat(df_list1)
+df2 = pd.concat(df_list2)
 # plot
-g = sns.relplot(data = df7, x = "param_val", y = "effect size", col = "sim_name",
-                hue = "readout", kind = "line")
-g.set(xscale = "log", xlabel = "feedback fold-change")
+g = sns.relplot(data = df1, x = "param_val", y = "effect size", hue = "mode", col = "sim_name",
+                row = "readout", kind = "line")
+g.set(xscale = "log")
+g.set_titles("{col_name}")
 plt.show()
-g.savefig("plot_fig3A_readouts.svg")
+#g.set(xscale = "log", xlabel = "feedback fold-change")
+#plt.show()
+#g.savefig("../figures/fig3/fig3A_readouts.pdf")
 # plot time course and relative cells with feedback variation
-df8 = sim_rtm.run_timecourses(arr_dict)
-g = sim_rtm.plot_timecourses(df8, log = True, cbar_label = "feedback fold-change", ylabel = "cells X (% of total)")
-plt.show()
-g.savefig("../figures/fig3/fig3A_timecourse.pdf")
+
+
+#g = sim_rtm.plot_timecourses(df8, log = True, cbar_label = "feedback fold-change", ylabel = "cells X (% of total)")
+#plt.show()
+#g.savefig("../figures/fig3/fig3A_timecourse.pdf")

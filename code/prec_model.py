@@ -286,7 +286,7 @@ class Simulation:
 
         """
         # get readouts
-        peak = readouts.get_peak(state.time, state.cells)
+        peak = readouts.get_peak_height(state.time, state.cells)
         area = readouts.get_area(state.time, state.cells)
         tau = readouts.get_peaktime(state.time, state.cells)
         decay = readouts.get_decay(state.time, state.cells)     

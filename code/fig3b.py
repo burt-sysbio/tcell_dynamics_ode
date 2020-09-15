@@ -39,8 +39,8 @@ d = {
      "n_div_prec" : 2.5,
      "death_th1" : 2.1,
      "death_tfh" : 2.1,
-     "p_th1" : 0.45,
-     "p_tfh" : 0.35,
+     "p_th1" : 0.35,
+     "p_tfh" : 0.45,
      "p_prec" : 0.2,
      "deg_myc" : 0.1,
      "EC50_myc" : 0.5,
@@ -101,7 +101,7 @@ g = sns.relplot(
 plt.show()
 #g.savefig("fig3B_1.svg")
 arr_dict = {"fb_ifng_prob_th1" : np.geomspace(1,100,50), 
-            "fb_il21_prob_th1" : np.geomspace(1,100,50)}
+            "fb_il21_prob_tfh" : np.geomspace(1,100,50)}
 
 # vary parameters
 df = sim_rate.vary_param(arr_dict)
@@ -125,10 +125,10 @@ g = sns.relplot(data = df7, x = "param_val", y = "effect size", col = "sim_name"
 g.set(xscale = "log", xlabel = "feedback fold-change")
 g.set_titles("{col_name}")
 plt.show()
-g.savefig("plot_fig3B_readouts.svg")
+g.savefig("../figures/fig3/fig3B_readouts.pdf")
 
 # plot time course and relative cells with feedback variation
 df8 = sim_rtm.run_timecourses(arr_dict)
 g = sim_rtm.plot_timecourses(df8, log = True, cbar_label = "feedback fold-change", ylabel = "cells X (% of total)")
 plt.show()
-g.savefig("plot_fig3B_timecourse.pdf")
+g.savefig("../figures/fig3/fig3B_timecourse.pdf")
