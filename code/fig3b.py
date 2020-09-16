@@ -125,10 +125,13 @@ g = sns.relplot(data = df7, x = "param_val", y = "effect size", col = "sim_name"
 g.set(xscale = "log", xlabel = "feedback fold-change")
 g.set_titles("{col_name}")
 plt.show()
-g.savefig("../figures/fig3/fig3B_readouts.pdf")
+#g.savefig("../figures/fig3/fig3B_readouts.pdf")
 
 # plot time course and relative cells with feedback variation
 df8 = sim_rtm.run_timecourses(arr_dict)
-g = sim_rtm.plot_timecourses(df8, log = True, cbar_label = "feedback fold-change", ylabel = "cells X (% of total)")
+g = sim_rtm.plot_timecourses(df8,
+                             log = True,
+                             cbar_label = "feedback fold-change",
+                             ylabel = "cells X (% of total)", palette = "Reds")
 plt.show()
-g.savefig("../figures/fig3/fig3B_timecourse.pdf")
+#g.savefig("../figures/fig3/fig3B_timecourse.pdf")

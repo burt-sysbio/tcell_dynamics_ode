@@ -158,9 +158,12 @@ class Simulation:
         df_tfh = df_tfh.reset_index(drop = True)
         df_tfh["total"] = df_th1.cells + df_tfh.cells
         # if the sum of th1 and tfh cells is already very small set to Nan to avoid div. error
-        df_tfh["total"][df_tfh.total < 1e-6] = np.nan
+        #df_tfh["total"][df_tfh.total < 1e-6] = np.nan
+        # instead of converting to nan only keep these values
+        df_tfh = df_tfh[df_tfh.total > 1e-6]
         df_tfh["rel_cells"] = (df_tfh.cells / df_tfh.total)*100
-        #add total cells and compute relative cell fractions      
+        #add total cells and compute relative cell fractions
+        #df_tfh = df_[~np.isnan(df8.rel_cells)]
         return df_tfh
     
     def get_cells(self):
@@ -420,7 +423,9 @@ class Simulation:
         return df
     
 
-    def plot_timecourses(self, df, log = False, cbar_label = "feedback strength", ylabel = "Tfh % of total"):
+    def plot_timecourses(self, df, log = False,
+                         cbar_label = "feedback strength",
+                         ylabel = "Tfh % of total", **kwargs):
         """
         Parameters
         ----------
@@ -436,8 +441,8 @@ class Simulation:
         arr = df.loc[:,["pval"]]
         vmin = np.min(arr)
         vmax = np.max(arr)
-        if log == True:
 
+        if log == True:
             norm = matplotlib.colors.LogNorm(vmin = vmin, vmax = vmax)
             # if log then also in sns plot
         else:
@@ -450,12 +455,12 @@ class Simulation:
         
         # set hue to parameter name 
         g = sns.relplot(x = "time", y = "rel_cells", kind = "line", data = df, hue = "pval", 
-                        hue_norm = norm, palette = cmap, legend = False,
-                        aspect = 1.2)
+                        hue_norm = norm, legend = False, palette= "Blues",
+                        aspect = 1.0, **kwargs)
 
 
-        g.set(ylim = (0,100), ylabel = ylabel)
-        cbar = g.fig.colorbar(sm)
+        g.set(ylim = (None,100), ylabel = ylabel)
+        cbar = g.fig.colorbar(sm, ax = g.axes)
         # add colorbar       
         cbar.set_label(cbar_label)
         return g
