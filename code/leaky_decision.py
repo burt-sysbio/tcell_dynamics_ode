@@ -144,5 +144,5 @@ g = sim_rtm.plot_timecourses(df2,
                              ylabel = "cells X (% of total)",
                              col = "mode")
 plt.show()
-#g.savefig("../figures/fig3/fig3A_timecourse.pdf")
-#g.savefig("../figures/fig3/fig3A_timecourse.svg")
+g.savefig("../figures/fig3/fig3A_leaky_timecourse.pdf")
+g.savefig("../figures/fig3/fig3A_leaky_timecourse.svg")

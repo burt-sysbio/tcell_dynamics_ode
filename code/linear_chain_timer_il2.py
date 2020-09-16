@@ -256,13 +256,12 @@ g = sns.relplot(data = cells, x = "time", y = "norm",
                 col = "mode",
                 hue = "name",
                 kind = "line", aspect = 0.9, palette= "Blues",
-                facet_kws={"sharey":False})
+                facet_kws={"sharey":True, "margin_titles" : True})
 
-g.set_titles("{col_name}")
+g.set_titles(col_template="{col_name}", row_template= "{row_name}")
 g.set(ylabel = "effector cells (a.u.)",
       xlabel = "time (a.u.)")
 plt.show()
-
 g.savefig("../figures/fig3/fb_delay_timecourse.pdf")
 g.savefig("../figures/fig3/fb_delay_timecourse.svg")
 
@@ -274,6 +273,5 @@ g = sns.relplot(data = df_fb, x = "fb_fc", y = "population response",
 g.set(xscale = "log", ylim = (0, 30))
 plt.show()
 
-
-g.savefig("../figures/fig3/fb_delay_analysis.pdf")
-g.savefig("../figures/fig3/fb_delay_analysis.svg")
+#g.savefig("../figures/fig3/fb_delay_analysis.pdf")
+#g.savefig("../figures/fig3/fb_delay_analysis.svg")
