@@ -460,6 +460,7 @@ class Simulation:
 
 
         g.set(ylim = (None,100), ylabel = ylabel)
+        g.set_titles(col_template= "{col_name}")
         cbar = g.fig.colorbar(sm, ax = g.axes)
         # add colorbar       
         cbar.set_label(cbar_label)

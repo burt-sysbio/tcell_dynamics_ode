@@ -263,8 +263,8 @@ g.set(ylabel = "effector cells (a.u.)",
       xlabel = "time (a.u.)")
 plt.show()
 
-g.savefig("../figures/fb_delay_timecourse.pdf")
-g.savefig("../figures/fb_delay_timecourse.svg")
+g.savefig("../figures/fig3/fb_delay_timecourse.pdf")
+g.savefig("../figures/fig3/fb_delay_timecourse.svg")
 
 g = sns.relplot(data = df_fb, x = "fb_fc", y = "population response",
                 hue = "delay",
@@ -275,5 +275,5 @@ g.set(xscale = "log", ylim = (0, 30))
 plt.show()
 
 
-g.savefig("../figures/fb_delay_analysis.pdf")
-g.savefig("../figures/fb_delay_analysis.svg")
+g.savefig("../figures/fig3/fb_delay_analysis.pdf")
+g.savefig("../figures/fig3/fb_delay_analysis.svg")
