@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
-
+sns.set(context = "poster", style = "ticks")
 
 def fb_pos(x, K):
     out = (x ** 3 * K ** 3) / x ** 3
@@ -14,6 +14,40 @@ def fb_pos(x, K):
 def fb_neg(x, K):
     out = K ** 3 / (x ** 3 + K ** 3)
     return out
+
+class sir_model():
+    def __init__(self,
+                 parameters,
+                 time = np.linspace(0,30,100),
+                 name = None,
+                 celltypes = ["vir", "eff", "chr"]):
+        self.params = parameters
+        self.celltypes = celltypes
+        self.time = time
+        self.name = name
+
+    def init_model(self):
+        y0 = [1,1,0]
+        return y0
+
+    def run_model(self):
+        y0 = self.init_model()
+        d = self.params
+        time = self.time
+        celltypes = self.celltypes
+        state = odeint(vir_ode, y0, time, args = (d,))
+        state = pd.DataFrame(state, columns = celltypes)
+        state["time"] = time
+        state["tot"] = state.chr + state.eff
+        if self.name is not None:
+            state["name"] = self.name
+
+        return state
+
+    def tidy_output(self):
+        state = self.run_model()
+        state = pd.melt(state, var_name= "cell", id_vars=["time", "name"])
+        return state
 
 
 def vir_ode(s, time, d):
@@ -27,26 +61,26 @@ def vir_ode(s, time, d):
     return[ds1, ds2, ds3]
 
 
-params = {
-    "vir_growth" : 5,
-    "vir_death" :1,
+p_acute = {
+    "vir_growth" : 3,
+    "vir_death" : 1,
     "prolif" : 1,
-    "r_chronic" : 0.5,
+    "r_chronic" : 0,
     "k_chronic" : 1,
     "r_death" : 2,
     "k_death" : 1,
 }
 
-y0 = [1, 1, 0]
-time = np.linspace(0,20,100)
-res = odeint(vir_ode, y0, time, args = (params,))
+p_chronic = dict(p_acute)
+p_chronic["r_chronic"] = 0.5
 
-df_res = pd.DataFrame(res, columns= ["vir", "eff", "chr"])
-df_res["tot"] = df_res.eff + df_res.chr
-df_res["time"] = time
+sim1 = sir_model(p_acute, name = "acute")
+sim2 = sir_model(p_chronic, name = "chronic")
+df1 = sim1.tidy_output()
+df2 = sim2.tidy_output()
 
-df_res = pd.melt(df_res, var_name= "cell", id_vars="time")
+df_res = pd.concat([df1, df2])
 
-g = sns.relplot(data = df_res, x = "time", y = "value", row = "cell",
-                facet_kws= {"sharey" : False})
+g = sns.relplot(data = df_res, x = "time", y = "value", row = "cell", col = "name", kind = "line")
+g.set(yscale = "log", ylim = (1e-1, None))
 plt.show()
