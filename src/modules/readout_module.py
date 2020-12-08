@@ -5,11 +5,11 @@ Created on Mon Aug  3 10:43:36 2020
 @author: Philipp
 """
 
-
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy import interpolate
 import warnings
+
 
 def get_maximum(x, y):
     """
@@ -78,7 +78,6 @@ def get_peak_height(time, cells):
     return peak_val
 
 
-
 def get_peaktime(time, cells):
     """
     get time of peak
@@ -93,7 +92,6 @@ def get_peaktime(time, cells):
         peaktime = np.nan
     
     return peaktime
-
 
 
 def get_duration(time, cells):
