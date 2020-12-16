@@ -28,39 +28,6 @@ def get_maximum(x, y):
     return max_x, max_y
 
 
-def get_tau(time, cells):
-    """
-    get halftime of peak
-    """
-    cells = cells.array 
-    crit = check_criteria(cells)
-    
-    if crit == True:
-    
-        peak_idx = np.argmax(cells)
-        # get max value
-        peak = cells[peak_idx]
-        peak_half = peak / 2.
-        #print(peak)
-        cells = cells[:(peak_idx+1)]
-        time = time[:(peak_idx+1)]
-        # assert that peak is not at beginning
-        if peak_idx <= 3:
-            tau = np.nan
-        # assert that peak half is in new cell array
-        elif np.all(peak_half<cells):
-            tau = np.nan
-        else:
-            f = interpolate.interp1d(cells, time)           
-            tau = f(peak_half)
-            tau = float(tau)
-            
-    else:
-        tau = np.nan
-            
-    return tau    
-
-
 
 def get_peak_height(time, cells):
     """
@@ -187,3 +154,37 @@ def check_criteria(cells):
     crit = True
     warnings.warn("criteria for readout quality control disabled")
     return crit
+
+
+def get_tau(time, cells):
+    """
+    deprecated, use get maximum and from this output max_y
+    """
+    cells = cells.array
+    crit = check_criteria(cells)
+
+    if crit == True:
+
+        peak_idx = np.argmax(cells)
+        # get max value
+        peak = cells[peak_idx]
+        peak_half = peak / 2.
+        # print(peak)
+        cells = cells[:(peak_idx + 1)]
+        time = time[:(peak_idx + 1)]
+        # assert that peak is not at beginning
+        if peak_idx <= 3:
+            tau = np.nan
+        # assert that peak half is in new cell array
+        elif np.all(peak_half < cells):
+            tau = np.nan
+        else:
+            f = interpolate.interp1d(cells, time)
+            tau = f(peak_half)
+            tau = float(tau)
+
+    else:
+        tau = np.nan
+
+    return tau
+

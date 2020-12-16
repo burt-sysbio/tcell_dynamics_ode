@@ -28,9 +28,12 @@ d = {
     "K_il2": 1.0,  # il2 effect on prolif
     "up_il2": 1,
     # virus params
-    "vir_alpha" : 10.0,  # virus alpha (gamma dist)
+    "vir_alpha" : 1.0,  # virus alpha (gamma dist)
     "vir_load" : 1,  # antigen can be set to 0 for no antigen effects
     "vir_beta" : 5.0,  # virus beta (gamma dist)
     "K_ag_myc" : 0.5,  # antigen inhibits myc degradation
     "K_ag_il2" : 0.5,  # antigen induces il2 secretion on teffs
+    # virus params for ode model
+    "vir_growth" :1,
+    "vir_death" : 1,
 }

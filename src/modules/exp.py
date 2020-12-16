@@ -21,17 +21,20 @@ class Sim:
                  name,
                  params,
                  time,
-                 virus_model = model.virus_model,
+                 virus_model,
                  model = model.th_cell_diff,
                  core = model.diff_core,
                  n_molecules = 2):
+
         self.name = name
+        # type of homeostasis model
         self.prolif_model = prolif_wrapper(name, params)
         self.params = dict(params)
         self.time = time
         self.core = core
         self.model = model
-        self.virus_model = virus_model(params)  # virus model return as function that is initialized is right params
+        # initialize and interpolate virus model for given time and parameters
+        self.virus_model = virus_model(self.time, self.params)
         self.n_molecules = n_molecules # myc and il2_ex
 
     def init_model(self):
@@ -80,7 +83,7 @@ class Sim:
         molecules = state[:,-n:]
 
         # get virus model and compute virus at all time points
-        virus = self.virus_model.pdf(self.time)*self.params["vir_load"]
+        virus = self.virus_model(self.time)
 
         return cells, molecules, virus
 

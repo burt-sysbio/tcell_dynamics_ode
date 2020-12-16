@@ -9,6 +9,7 @@ def pscan(sim, arr, pname):
     for a in arr:
         sim.params[pname] = a
         cells, molecules = sim.run_sim()
+        print(cells.iloc[:5, :])
         r = get_readouts(cells)
         r["param_value"] = a
         reads.append(r)

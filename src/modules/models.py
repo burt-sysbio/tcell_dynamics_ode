@@ -5,17 +5,47 @@ keep all ode models here
 import numpy as np
 from src.modules.models_helper import *
 from scipy.stats import gamma
+from scipy import interpolate
+from scipy.integrate import odeint
 # =============================================================================
-# linear models
+# virus models
 # ============================================================================
-def virus_model(d):
+def vir_model_gamma(time, d):
+    """
+    should return function object that accepts single argument time
+    """
     alpha = d["vir_alpha"]
     beta = d["vir_beta"]
     scale = 1/beta
     mygamma = gamma(a = alpha, scale = scale)
-    return mygamma
+    def f(t):
+        return mygamma.pdf(t) * d["vir_load"]
+    return f
 
 
+def vir_model_ode(time, d):
+    """
+    should return function object that accepts single argument time
+    solves ode and return interpolated normalized function object
+    """
+    y0 = 0
+    norm = True
+
+    def vir_ode(v, t, d):
+        dv = (d["vir_growth"]- t*d["vir_death"])*v
+        return dv
+
+    s = odeint(vir_ode, y0, time, args=(d,))
+    # normalize by area
+    if norm:
+        s = s/np.trapz(s, time)
+    f = interpolate.interp1d(s, time)
+    return f
+
+
+# =============================================================================
+# t cell models
+# ============================================================================
 def th_cell_diff(state, time, d, prolif_model, core_model, virus_model):
     """
     takes state vector to differentiate effector cells as linear chain
@@ -33,7 +63,7 @@ def th_cell_diff(state, time, d, prolif_model, core_model, virus_model):
     tnaive, teff = get_cell_states(th_state, d)
 
     # compute il2 and myc changes based on antigen load (set vir load to 0 for no ag effect)
-    ag = virus_model.pdf(time) * d["vir_load"]
+    ag = virus_model(time)
     dt_myc = get_myc(myc, ag, d)  # ag inhibits myc degradation
     dt_il2 = get_il2(tnaive, teff, il2, ag, d)  # ag induces il2 secretion by effectors
 
