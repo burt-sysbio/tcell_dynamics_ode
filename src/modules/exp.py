@@ -9,7 +9,7 @@ import numpy as np
 from scipy.integrate import odeint
 import pandas as pd
 import warnings
-from src.modules.models import prolif_wrapper
+from src.modules.models_helper import prolif_wrapper
 
 class Sim:
     """
@@ -26,15 +26,16 @@ class Sim:
                  core = model.diff_core,
                  n_molecules = 2):
 
-        self.name = name
+
         # type of homeostasis model
-        self.prolif_model = prolif_wrapper(name, params)
+        self.name = name
+        self.prolif_model = prolif_wrapper
         self.params = dict(params)
         self.time = time
         self.core = core
         self.model = model
         # initialize and interpolate virus model for given time and parameters
-        self.virus_model = virus_model(self.time, self.params)
+        self.virus_model = virus_model
         self.n_molecules = n_molecules # myc and il2_ex
 
     def init_model(self):
@@ -74,7 +75,11 @@ class Sim:
 
         # run sim
         y0 = self.init_model()
-        args = (self.params, self.prolif_model, self.core, self.virus_model)
+
+        # initialize virus model with given parameters
+        vir_model = self.virus_model(self.time, self.params)
+        p_model = self.prolif_model(self.name, self.params)
+        args = (self.params, p_model, self.core, vir_model)
         state = odeint(self.model, y0, self.time, args = args, hmax = hmax)
 
         # format output
@@ -83,7 +88,7 @@ class Sim:
         molecules = state[:,-n:]
 
         # get virus model and compute virus at all time points
-        virus = self.virus_model(self.time)
+        virus = vir_model(self.time)
 
         return cells, molecules, virus
 

@@ -18,6 +18,9 @@ def null_model(th_state, time, d):
 
 
 def prolif_wrapper(name, d):
+    """
+    return proliferation model (il2, myc or timer/il2 model)
+    """
     assert name in ["timer", "il2", "timer_il2"]
     if name == "il2":
         idx = 2
@@ -29,7 +32,7 @@ def prolif_wrapper(name, d):
         K = d["K_myc"]
         func = partial(menten_prolif, idx = idx, K = K)
     else:
-        func = menten_prolif2()
+        func = menten_prolif2
 
     return func
 

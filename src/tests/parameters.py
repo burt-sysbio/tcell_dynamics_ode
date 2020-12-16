@@ -9,14 +9,14 @@ d = {
     # proliferation
     "n_div": 1,
     "alpha_p" : 10,
-    "beta_p" : 100.0,
+    "beta_p" : 30.0,
     # death
     "lifetime_eff" : 1.0,
     "d_prec" : 0,
     "d_naive" : 0,
     "hill": 3,
     # myc parameters
-    "K_myc" : 0.001,
+    "K_myc" : 0.01,
     # leave lifetime myc to 1 and change K_myc if neccessary
     "lifetime_myc": 1.0,
     # il2 parameters

@@ -9,7 +9,7 @@ import pandas as pd
 import seaborn as sns
 
 # init model
-name = "timer"
+name = "il2"
 params_no_ag = dict(d)
 params_no_ag["vir_alpha"] = 1
 params_no_ag["vir_beta"] = 0.1
@@ -21,7 +21,7 @@ params_hi_ag = dict(d)
 params_hi_ag["vir_alpha"] = 1
 params_hi_ag["vir_beta"] = 2
 
-time = np.arange(0,50,0.01)
+time = np.arange(0,10,0.01)
 
 # run model
 sim_no_ag = Sim(name = name, params = params_no_ag, time = time, virus_model= vir_model_gamma)
@@ -65,15 +65,16 @@ plt.show()
 #g.savefig("../figures/antigen_effects/vir_cells.png")
 
 # run parameter scan
-pname = "vir_beta"
+pname = "initial_cells"
 sim = Sim(name = name,
           params = d,
           time = time,
           virus_model= vir_model_gamma)
-arr = np.geomspace(0.1,3,50)
+arr = np.geomspace(0.1,100,10)
 out = pscan(sim, arr, pname)
 
-out = out.loc[out.cell == "teff"]
+out = out.loc[out.cell == "vir_beta"]
+
 g = sns.relplot(data = out, x = "param_value", y = "value", col = "readout",
                 kind = "line", facet_kws={"sharey": False})
 g.set(xscale = "log")
