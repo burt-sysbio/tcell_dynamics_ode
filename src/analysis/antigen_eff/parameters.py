@@ -37,3 +37,15 @@ d = {
     "vir_growth": 1,
     "vir_death": 1,
 }
+
+
+d_no_ag = dict(d)
+d_no_ag["vir_alpha"] = 1
+d_no_ag["vir_beta"] = 0.1
+
+d_ag = dict(d)
+d_ag["vir_alpha"] = 1
+d_ag["vir_beta"] = 1
+d_hi_ag = dict(d)
+d_hi_ag["vir_alpha"] = 1
+d_hi_ag["vir_beta"] = 2

@@ -28,18 +28,24 @@ def vir_model_ode(time, d):
     should return function object that accepts single argument time
     solves ode and return interpolated normalized function object
     """
-    y0 = 0
+    y0 = 1
     norm = True
+
+    # extend time array because ode solver sometimes jumps above provided range
+    time = np.arange(np.min(time), 5*np.max(time), 0.01)
 
     def vir_ode(v, t, d):
         dv = (d["vir_growth"]- t*d["vir_death"])*v
         return dv
 
     s = odeint(vir_ode, y0, time, args=(d,))
+    s = s.flatten()
     # normalize by area
     if norm:
-        s = s/np.trapz(s, time)
-    f = interpolate.interp1d(s, time)
+        area = np.trapz(s, time)
+        assert area != 0
+        s = s/area
+    f = interpolate.interp1d(time, s)
     return f
 
 

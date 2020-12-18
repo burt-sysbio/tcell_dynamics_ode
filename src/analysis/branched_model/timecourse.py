@@ -4,6 +4,7 @@
 Created on Tue Aug  4 12:56:27 2020
 
 @author: burt
+run timecourse for branched model
 """
 from prec_model import Simulation, prec_model
 

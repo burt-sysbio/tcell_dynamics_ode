@@ -10,7 +10,6 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy import interpolate
 import warnings
 
-
 def get_maximum(x, y):
     """
     interpolate maximum
@@ -26,7 +25,6 @@ def get_maximum(x, y):
     max_y = cr_vals[max_index]
 
     return max_x, max_y
-
 
 
 def get_peak_height(time, cells):

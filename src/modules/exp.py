@@ -117,4 +117,24 @@ class Sim:
             self.params[pname] = val
 
 
+class Simlist:
+    def __init__(self, sim_list, ids):
+        self.ids = ids
+        self.sims = sim_list
+
+    def run_sim(self):
+        cell_list = []
+        mol_list = []
+        for s, i in zip(self.sims, self.ids):
+            cells, molecules = s.run_sim()
+            # attach output and combine dfs
+            cells["id"] = i
+            molecules["id"] = i
+            cell_list.append(cells)
+            mol_list.append(molecules)
+
+            # combine output for ag and no ag simulation
+        cells = pd.concat(cell_list)
+        molecules = pd.concat(mol_list)
+        return cells, molecules
 
