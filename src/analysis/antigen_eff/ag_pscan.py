@@ -24,7 +24,7 @@ else:
     pname1 = "vir_growth"
     pname2 = "vir_death"
 
-res = 5
+res = 50
 up = 10
 down = 0.1
 arr = np.geomspace(down, up, res)
@@ -33,8 +33,8 @@ res2 = proc.pscan(sim_timer, arr, "vir_beta")
 res3 = proc.pscan2d(sim_il2, pname1, pname2, prange1=(1,100), prange2=(0.1,100), res = res)
 res4 = proc.pscan2d(sim_timer, pname1, pname2, prange1=(1,100), prange2=(0.1,100), res = res)
 
-#res3.to_csv("ag_pscan2d_gamma_il2.csv")
-#res4.to_csv("ag_pscan2d_gamma_timer.csv")
+res3.to_csv("ag_pscan2d_gamma_il2.csv")
+res4.to_csv("ag_pscan2d_gamma_timer.csv")
 
 # plot parameter scans
 for r in [res1, res2]:
