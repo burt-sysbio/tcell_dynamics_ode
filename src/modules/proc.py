@@ -65,13 +65,14 @@ def pscan2d(sim, pname1, pname2, prange1, prange2, res = 3, log = True, SD = Fal
     arr1 = fun(prange1[0], prange1[1], res)
     arr2 = fun(prange2[0], prange2[1], res)
     prod = product(arr1,arr2)
+
     # get readouts for each cart. prod. of param comb.
     out = [gridfun(p, sim, pname1, pname2, SD) for p in prod]
     out = pd.concat(out)
 
     # normalize to median
     out["val_norm"] = out.groupby(["cell", "readout"]).value.transform(lambda x: np.log2(x/x.median()))
-    #out["norm_min"] = out.groupby(["cell", "readout"]).value.transform(lambda x: np.log2(x / x.min()))
+    out["norm_min"] = out.groupby(["cell", "readout"]).value.transform(lambda x: np.log2(x / x.min()))
     return out
 
 

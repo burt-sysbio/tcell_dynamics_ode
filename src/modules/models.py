@@ -120,15 +120,15 @@ def get_cell_states(th_state, d):
 
 def get_myc(myc, ag, d):
     # antigen inhibition of myc degradation
-    deg_myc = d["K_ag_myc"]**3 / (ag**3 + d["K_ag_myc"]**3) * (1/d["lifetime_myc"])
+    deg_myc = (d["K_ag_myc"]**3 / (ag**3 + d["K_ag_myc"]**3)) * (1/d["lifetime_myc"])
     dt_myc = -deg_myc*myc
     return dt_myc
 
 
 def get_il2(tnaive, teff, il2, ag, d):
     # antigen induces il2 secretion by effector cells
-    ag_il2 = (ag**3 / (ag**3 + d["K_ag_il2"]**3))
+    # note that if ag is inf nan is returned which is bad!
+    ag_il2 = ag**3 / (ag**3 + d["K_ag_il2"]**3)
     # il2 production is naive prod + eff(ag) prod - consumption (eff)
     dt_il2 = d["r_il2"]*tnaive + (d["r_il2_eff"]*ag_il2 - d["up_il2"]*il2) * teff
-
     return dt_il2

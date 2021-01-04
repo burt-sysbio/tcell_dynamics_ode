@@ -34,10 +34,13 @@ def plot_pscan(df, column, col = "readout", row = "param", hue = "name", xscale 
     return g
 
 
-def plot_heatmap(df, value_col, readout, vmin=None, vmax=None, cmap="bwr", log_color = True, log_axes=True, cbar_label="eff. size"):
+def plot_heatmap(df, value_col, readout, log_color,
+                 vmin=None, vmax=None, cmap="Reds", log_axes=True):
     """
     take df generated from 2dscan and plot single heatmap for a given readout
     note that only effector cells are plotted
+    value_col: could be either val norm or value as string
+    log_color: color representation within the heatmap as log scale, use if input arr was log scaled
     """
     # process data (df contains all readouts and all cells
     df = df.loc[(df.cell == "teff") & (df.readout == readout)]
@@ -55,7 +58,7 @@ def plot_heatmap(df, value_col, readout, vmin=None, vmax=None, cmap="bwr", log_c
 
     # plot data
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.pcolormesh(arr1, arr2, z, norm = norm, cmap=cmap, vmin=vmin, vmax=vmax, rasterized=True)
+    ax.pcolormesh(arr1, arr2, z, norm = norm, cmap=cmap, vmin=vmin, vmax=vmax)
 
     # tick reformatting
     loc_major = ticker.LogLocator(base=10.0, numticks=100)
@@ -71,8 +74,8 @@ def plot_heatmap(df, value_col, readout, vmin=None, vmax=None, cmap="bwr", log_c
     ax.set_ylabel(df.pname2.iloc[0])
 
     cbar = plt.colorbar(sm, ax=ax)
+    cbar_label = readout + " logFC"
     cbar.set_label(cbar_label)
-
     plt.tight_layout()
 
     return fig
