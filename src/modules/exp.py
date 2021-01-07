@@ -24,7 +24,8 @@ class Sim:
                  virus_model,
                  model = model.th_cell_diff,
                  core = model.diff_core,
-                 n_molecules = 2):
+                 n_molecules = 2,
+                 n_chronic = 1):
 
 
         # type of homeostasis model
@@ -37,12 +38,14 @@ class Sim:
         # initialize and interpolate virus model for given time and parameters
         self.virus_model = virus_model
         self.n_molecules = n_molecules # myc and il2_ex
+        self.n_chronic = n_chronic
 
     def init_model(self):
         """
         set initial conditions for ODE solver
         """
-        y0 = np.zeros(self.params["alpha"]+1*self.params["alpha_p"]+ self.n_molecules)
+        n = self.n_molecules+self.n_chronic
+        y0 = np.zeros(self.params["alpha"]+self.params["alpha_p"] + n)
         y0[0] = self.params["initial_cells"]
         
         # init myc concentration
@@ -56,23 +59,23 @@ class Sim:
         summarize effector cells and naive cells
         """
         alpha = self.params["alpha"]
-        teff = cells[:, alpha:] # myc and il2_ex are at end of array
+        tall = np.sum(cells, axis = 1)
+        tnaive = cells[:, :alpha]
+        teff = cells[:, alpha:-self.n_chronic] # myc and il2_ex are at end of array
         teff = np.sum(teff, axis = 1)
-        tnaive = np.sum(cells, axis = 1) - teff
+        tnaive = np.sum(tnaive, axis = 1)
+        tchronic = tall - (teff+tnaive)
         
-        cells = np.stack((tnaive, teff), axis = -1)
+        cells = np.stack((tnaive, teff, tchronic, tall), axis = -1)
         return cells    
 
-    def run_ode(self, hmax = 0.0):
+    def run_ode(self):
         """
         run time course simulation
-        hmax is maximum step size, needed if ODE behavior changes e.g. due to
         timer thresholds t>tcrit 
         normalize : bool (set true if area should be normalized to 1)
         returns data frame
         """
-        if hmax != 0.0 : warnings.warn("warning: hmax is set, might take long to integrate")
-
         # run sim
         y0 = self.init_model()
 
@@ -80,7 +83,7 @@ class Sim:
         vir_model = self.virus_model(self.time, self.params)
         p_model = self.prolif_model(self.name, self.params)
         args = (self.params, p_model, self.core, vir_model)
-        state = odeint(self.model, y0, self.time, args = args, hmax = hmax)
+        state = odeint(self.model, y0, self.time, args = args)
 
         # format output
         n = self.n_molecules
@@ -92,13 +95,13 @@ class Sim:
 
         return cells, molecules, virus
 
-    def run_sim(self, hmax = 0.0):
+    def run_sim(self):
 
-        cells, molecules, virus = self.run_ode(hmax)
+        cells, molecules, virus = self.run_ode()
 
         # tidy cell output
         cells = self.tidy_cells(cells)
-        cells = pd.DataFrame(cells, columns = ["tnaive", "teff"])
+        cells = pd.DataFrame(cells, columns = ["tnaive", "teff", "tchronic", "all_cells"])
         cells["time"] = self.time
         cells["name"] = self.name
         cells = pd.melt(cells, id_vars=["time", "name"], var_name="cell")

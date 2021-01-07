@@ -6,6 +6,7 @@ d = {
     "b": 0,  # model influx
     "alpha": 10,
     "beta": 10.,
+    "r_chronic" : 0.1,
     # proliferation
     "n_div": 1,
     "alpha_p": 10,
@@ -33,6 +34,11 @@ d = {
     "vir_beta": 5.0,  # virus beta (gamma dist)
     "K_ag_myc": 0.5,  # antigen inhibits myc degradation
     "K_ag_il2": 0.5,  # antigen induces il2 secretion on teffs
+    "K_ag_chronic" : 1,
+    "K_pos_fb_chronic" : 1,
+    "K_neg_fb_chronic" : 1,
+    "neg_fb_chronic" : 1,
+    "pos_fb_chronic" : 1,
     # virus params for ode model
     "vir_growth": 1,
     "vir_death": 1,

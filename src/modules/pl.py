@@ -8,25 +8,25 @@ import matplotlib
 sns.set(context = "poster", style = "ticks")
 
 
-def plot_timecourse(df, hue = "id", row = "name", col = "cell", yscale = "log", drop_naive = True):
+def plot_timecourse(df, hue = "name", col = "cell", yscale = "log", drop_naive = True):
     """
     take either cells or molecules from run sim object
     """
     if drop_naive:
         df = df.loc[df.cell != "tnaive"]
 
-    g = sns.relplot(data=df, x="time", hue = hue, row = row, col=col, y="value", kind="line")
+    g = sns.relplot(data=df, x="time", hue = hue, col=col, y="value", kind="line")
     ylim = (1e-1, None) if yscale == "log" else (None, None)
     g.set(yscale=yscale, ylim=ylim)
     return g
 
 
-def plot_pscan(df, column, col = "readout", row = "param", hue = "name", xscale = "log"):
+def plot_pscan(df, column = "value", col = "readout", row = "cell", xscale = "log"):
     """
     take df generated through pscan function
     """
     df = df.loc[(df.cell != "tnaive") & (df.readout != "Decay")]
-    g = sns.relplot(data = df, x = "param_value", y = column, hue = hue, col = col, row = row,
+    g = sns.relplot(data = df, x = "param_value", y = column, col = col, row = row,
                     facet_kws= {"sharey" : False}, kind = "line")
 
     g.set(xscale = xscale, xlabel = df.param.iloc[0], ylabel = "effect size")

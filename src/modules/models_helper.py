@@ -2,6 +2,11 @@ from functools import partial
 import numpy as np
 
 
+def fb_fc(conc, gamma, K, hill = 3):
+    conc = conc if conc > 0 else 0
+    out = (gamma*conc**hill + K**hill) / (K**hill + conc**hill)
+    return out
+
 def menten(conc, vmax, K, hill):
     # make sure to avoid numeric errors for menten
     conc = conc if conc > 0 else 0
@@ -20,6 +25,7 @@ def null_model(th_state, time, d):
 def prolif_wrapper(name, d):
     """
     return proliferation model (il2, myc or timer/il2 model)
+    the index is important
     """
     assert name in ["timer", "il2", "timer_il2"]
     if name == "il2":

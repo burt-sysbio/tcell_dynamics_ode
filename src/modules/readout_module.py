@@ -33,13 +33,7 @@ def get_peak_height(time, cells):
     """
     cells = cells.array
     time = time.array
-    crit = check_criteria(cells)
-
-    if crit == True:
-        peaktime, peak_val = get_maximum(time, cells)
-    else: 
-        peak_val = np.nan
-        
+    peaktime, peak_val = get_maximum(time, cells)
     return peak_val
 
 
@@ -49,13 +43,8 @@ def get_peaktime(time, cells):
     """
     cells = cells.array
     time = time.array
-    crit = check_criteria(cells)
-    
-    if crit == True:
-        peaktime, peak_val = get_maximum(time, cells)
-    else:
-        peaktime = np.nan
-    
+    peaktime, peak_val = get_maximum(time, cells)
+
     return peaktime
 
 
@@ -65,18 +54,12 @@ def get_duration(time, cells):
     """
     cells = cells.array
     time = time.array
-    crit = check_criteria(cells)
-    thres = 0.001
-    if crit == True and (cells > thres).any():
-        # get times where cells are > value
-        time2 = time[cells > thres]
-        #print(time2)
-        #use last element 
-        dur = time2[-1]
-
-    else:
-        dur = np.nan
-        
+    thres = 0.01
+    # get times where cells are > value
+    time2 = time[cells > thres]
+    #print(time2)
+    #use last element
+    dur = time2[-1]
     return dur
         
 
@@ -84,42 +67,31 @@ def get_decay(time, cells):
     """
     get the half-time of decay
     """
-    
-    cells = cells.array 
-    crit = check_criteria(cells)
+    cells = cells.array
     cellmax = np.amax(cells)
     cellmin = cells[-1] 
-    
-    if crit == True:
-        peak_id = np.argmax(cells)
-        cells = cells[peak_id:]
-        time = time[peak_id:]
-        
-        # make sure there are at least two values in the array
-        assert len(cells) > 1
-        
-        # interpolate to get time unter half of diff between max and arr end is reached
-        celldiff = (cellmax - cellmin) / 2
-        celldiff = cellmax - celldiff
-        f = interpolate.interp1d(cells, time)
-        #print(cellmax, cellmin, celldiff)
-        tau = f(celldiff)
-    else:
-        tau = np.nan
+
+    peak_id = np.argmax(cells)
+    cells = cells[peak_id:]
+    time = time[peak_id:]
+
+    # make sure there are at least two values in the array
+    assert len(cells) > 1
+
+    # interpolate to get time unter half of diff between max and arr end is reached
+    celldiff = (cellmax - cellmin) / 2
+    celldiff = cellmax - celldiff
+    f = interpolate.interp1d(cells, time)
+    #print(cellmax, cellmin, celldiff)
+    tau = f(celldiff)
     
     return float(tau)
 
 
 def get_area(time, cells):
     
-    cells = cells.array 
-    crit = check_criteria(cells)
-    
-    if crit == True:
-        area = np.trapz(cells, time)
-    else: 
-        area = np.nan
-        
+    cells = cells.array
+    area = np.trapz(cells, time)
     return area
 
 

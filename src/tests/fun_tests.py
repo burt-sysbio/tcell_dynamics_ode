@@ -1,11 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 # my modules
-import src.mypkg.exp as exp
-import src.mypkg.pl as pl
-import src.mypkg.proc as proc
-import src.mypkg.models as mdl
-
+import src.modules.exp as exp
+import src.modules.pl as pl
+import src.modules.proc as proc
+import src.modules.models as mdl
+import warnings
+warnings.simplefilter("error")
 # paramters
 from src.tests.parameters import d
 
@@ -19,29 +20,27 @@ mysim2 = exp.Sim(name = "il2", params = params, time = time, virus_model = mdl.v
 mysim3 = exp.Sim(name = "timer", params = params, time = time, virus_model= mdl.vir_model_gamma)
 mysim4 = exp.Sim(name = "timer", params = params, time = time, virus_model= mdl.vir_model_ode)
 
-mysims = [mysim1, mysim2, mysim3, mysim4]
+mysims = [mysim1]
 for mysim in mysims:
     # run timecourse
     cells, molecules = mysim.run_sim()
 
     # plot timecourse
     g = pl.plot_timecourse(cells)
+    plt.show()
     g = pl.plot_timecourse(molecules)
+    plt.show()
 
     # get readouts
     reads = proc.get_readouts(cells)
 
     # run pscan
     pname = "beta"
-    arr = np.geomspace(0.1,3,3)
+    arr = np.geomspace(0.1,1,12)
     myscan1 = proc.pscan(mysim, arr, pname)
 
     # plot pscan
     g = pl.plot_pscan(myscan1)
+    plt.show()
 
-    # run pscan2d
-    myscan2 = proc.pscan2d(mysim, "beta", "n_div", (1,10), (1,10), res = 5)
-
-    # plot heatmap
-    g = pl.plot_heatmap(myscan2, readout = "Area")
 

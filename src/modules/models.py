@@ -7,6 +7,7 @@ from src.modules.models_helper import *
 from scipy.stats import gamma
 from scipy import interpolate
 from scipy.integrate import odeint
+from numba import jit
 # =============================================================================
 # virus models
 # ============================================================================
@@ -58,15 +59,20 @@ def th_cell_diff(state, time, d, prolif_model, core_model, virus_model):
     needs alpha and beta(r) of response time distribution, probability
     and number of precursor cells
     """
-    # get proliferation and death based on proliferation model (il2/timer)
-    beta_p = prolif_model(state, d)
+
 
     # divide array into cell states
     myc = state[-1]
     il2 = state[-2]
+    tchronic = state[-3]
+    n_chronic = 1
     n_molecules = 2
-    th_state = state[:-n_molecules]
+    th_state = state[:-(n_molecules+n_chronic)]
     tnaive, teff = get_cell_states(th_state, d)
+
+    # get proliferation and death based on proliferation model (il2/timer)
+    beta_p = prolif_model(state, d)
+    #beta_p = beta_p*fb_fc(tchronic, d["neg_fb_chronic"], d["K_neg_fb_chronic"])
 
     # compute il2 and myc changes based on antigen load (set vir load to 0 for no ag effect)
     ag = virus_model(time)
@@ -77,31 +83,39 @@ def th_cell_diff(state, time, d, prolif_model, core_model, virus_model):
     beta = d["beta"]
 
     # t cells ODEs
-    rate_death = 1.0/d["lifetime_eff"]
-    dt_state = core_model(th_state, d, beta, rate_death, beta_p)
+    r_death = 1.0/d["lifetime_eff"]
+
+    pcore = [d["b"], d["d_naive"], d["alpha"], d["d_prec"], d["n_div"],
+             beta, r_death, beta_p, d["r_chronic"]]
+
+    dt_state = core_model(th_state, *pcore)
+
+    # feedback of antigen on chronic cell diff
+    dt_chronic = d["r_chronic"]*teff#*menten(ag, d["r_chronic"], d["K_ag_chronic"], d["hill"])
+    # feedback of chronic cells on chronic cell diff
+    #dt_chronic = dt_chronic#*fb_fc(tchronic, d["pos_fb_chronic"], d["K_pos_fb_chronic"])
 
     # output
-    dt_state = np.concatenate((dt_state, [dt_il2], [dt_myc]))
+    dt_state = np.concatenate((dt_state, [dt_chronic], [dt_il2], [dt_myc]))
     return dt_state
 
-
-def diff_core(th_state, d, beta, rate_death, beta_p):
-   
+@jit
+def diff_core(th_state, b, d_naive, alpha, d_prec, n_div, beta, r_death, beta_p, r_chronic):
     # differentation, th_state should be array only for T cells (not myc or il2)
     dt_state = np.zeros_like(th_state)
     # calculate number of divisions for intermediate population
     for j in range(len(th_state)):
         if j == 0:
-            dt_state[j] = d["b"]-(beta+d["d_naive"])*th_state[j] 
+            dt_state[j] = b-(beta+d_naive)*th_state[j]
                       
-        elif j < (d["alpha"]):
-            dt_state[j] = beta*th_state[j-1]-(beta+d["d_prec"])*th_state[j]
+        elif j < alpha:
+            dt_state[j] = beta*th_state[j-1]-(beta+d_prec)*th_state[j]
         
-        elif j == (d["alpha"]):
-            dt_state[j] = d["n_div"]*beta*th_state[j-1] + (2*beta_p*th_state[-1]) - (rate_death+beta_p)*th_state[j]       
+        elif j == alpha:
+            dt_state[j] = n_div*beta*th_state[j-1] + (2*beta_p*th_state[-1]) - (r_death+beta_p+r_chronic)*th_state[j]
         
         else:
-            dt_state[j] = beta_p*th_state[j-1]-(beta_p+rate_death)*th_state[j]
+            dt_state[j] = beta_p*th_state[j-1]-(beta_p+r_death+r_chronic)*th_state[j]
         
     return dt_state
 
