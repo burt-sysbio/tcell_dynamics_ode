@@ -1,12 +1,10 @@
 import numpy as np
-from src.modules.exp import Sim, Simlist
-from src.analysis.antigen_eff.parameters import d_no_ag, d_ag, d_hi_ag
-from src.modules.models import vir_model_gamma, vir_model_ode
+from src.modules.exp import Sim
+from src.analysis.antigen_eff.exp1_const_ag.parameters import d_ag
+from src.modules.models import vir_model_gamma
 import src.modules.proc as proc
 import src.modules.pl as pl
 import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns
 
 # init model
 vir_model = vir_model_gamma
@@ -30,11 +28,6 @@ down = 0.1
 arr = np.geomspace(down, up, res)
 res1 = proc.pscan(sim_il2, arr, "vir_beta")
 res2 = proc.pscan(sim_timer, arr, "vir_beta")
-res3 = proc.pscan2d(sim_il2, pname1, pname2, prange1=(1,100), prange2=(0.1,100), res = res)
-res4 = proc.pscan2d(sim_timer, pname1, pname2, prange1=(1,100), prange2=(0.1,100), res = res)
-
-res3.to_csv("ag_pscan2d_gamma_il2.csv")
-res4.to_csv("ag_pscan2d_gamma_timer.csv")
 
 # plot parameter scans
 for r in [res1, res2]:

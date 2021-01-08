@@ -1,15 +1,13 @@
 # plot different virus dynamics
 
-from src.modules.exp import Sim
-from src.analysis.antigen_eff.parameters import d
-from src.modules.models import vir_model_gamma, vir_model_ode
+from src.modules.models import vir_model_ode, vir_model_gamma
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set(context = "poster", style = "ticks")
 
-time = np.arange(0, 5, 0.01)
-vir_model = vir_model_ode
+time = np.arange(0, 3, 0.01)
+vir_model = vir_model_gamma
 
 d1 = {
     "vir_beta": 2,
@@ -40,4 +38,8 @@ for d in dics:
     f = vir_model(time, d)
     vir = f(time)
     ax.plot(time, vir)
+    ax.set_xlabel("time")
+    ax.set_ylabel("conc. virus")
+
+plt.tight_layout()
 plt.show()

@@ -121,9 +121,10 @@ class Sim:
 
 
 class Simlist:
-    def __init__(self, sim_list, ids):
+    def __init__(self, sim_list, ids, idtype):
         self.ids = ids
         self.sims = sim_list
+        self.idtype = idtype
 
     def run_sim(self):
         cell_list = []
@@ -131,8 +132,8 @@ class Simlist:
         for s, i in zip(self.sims, self.ids):
             cells, molecules = s.run_sim()
             # attach output and combine dfs
-            cells["id"] = i
-            molecules["id"] = i
+            cells[self.idtype] = i
+            molecules[self.idtype] = i
             cell_list.append(cells)
             mol_list.append(molecules)
 

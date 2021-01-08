@@ -95,9 +95,39 @@ def get_area(time, cells):
     return area
 
 
-def check_criteria(cells): 
+def check_criteria2(df):
+    # check if all cells are nans
+    cells = df.value.values
+    if np.isnan(cells).all():
+        print(df.name + " nan found")
+        return False
+
+    # test first if peak id is at the end of array
+    peak_id = np.argmax(cells)
+    if peak_id >= len(cells) - 12:
+        print(df.name + " late peak")
+        return False
+
+    # check if cells increase and decrease around peak monotonically
+    arr_inc = np.diff(cells[(peak_id-10):peak_id]) >= 0
+    arr_dec = np.diff(cells[peak_id:(peak_id+10)]) <= 0
+    crit1 = arr_inc.all() and arr_dec.all()
+
+    # check difference between max and endpoint
+    crit2 = np.abs(np.amax(cells) - cells[-1]) > 1e-3
+
+    # check that last cells are close to 0
+    crit4 = (cells[-10] < 1e-3).all()
+
+    criteria = [crit1, crit2, crit4]
+
+    crit = True if all(criteria) else False
+    return crit
+
+
+def check_criteria(cells):
     cellmax = np.amax(cells)
-    cellmin = cells[-1]
+    cellend = cells[-1]
     last_cells = cells[-10]
     # test first if peak id is at the end of array
     peak_id = np.argmax(cells)
@@ -105,26 +135,22 @@ def check_criteria(cells):
         return False
     
     # check if cells increase and decrease around peak monotonically
-    arr_inc = np.diff(cells[(peak_id-10):peak_id]) > 0
-    arr_dec = np.diff(cells[peak_id:(peak_id+10)]) < 0
+    arr_inc = np.diff(cells[(peak_id-10):peak_id]) >= 0
+    arr_dec = np.diff(cells[peak_id:(peak_id+10)]) <= 0
     crit4 = arr_inc.all() and arr_dec.all()
 
     # check difference between max and endpoint
-    crit1 = np.abs(cellmax-cellmin) > 1e-3
+    crit1 = np.abs(cellmax-cellend) > 1e-3
     # check that max is higher than endpoint
-    crit2 = cellmax > cellmin
+    crit2 = cellmax > cellend
     # check that something happens at all
     crit3 = np.std(cells) > 0.001
     # check that last cells are close to 0
-    crit5 = (last_cells < 1e-1).all()
+    crit5 = (last_cells < 1e-3).all()
     
     criteria = [crit1, crit2, crit3, crit4, crit5]
     crit = True if all(criteria) else False
-
-    crit = True
-    warnings.warn("criteria for readout quality control disabled")
     return crit
-
 
 def get_tau(time, cells):
     """

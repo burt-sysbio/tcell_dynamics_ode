@@ -24,6 +24,17 @@ def vir_model_gamma(time, d):
     return f
 
 
+def vir_model_const(time, d):
+    """
+    ag level only depends on vir load, not on time
+    """
+    time = np.arange(np.min(time), 5 * np.max(time), 0.01)
+    s = np.ones_like(time)
+    s = s*d["vir_load"]
+    f = interpolate.interp1d(time, s, kind = "zero")
+    return f
+
+
 def vir_model_ode(time, d):
     """
     should return function object that accepts single argument time
@@ -59,8 +70,6 @@ def th_cell_diff(state, time, d, prolif_model, core_model, virus_model):
     needs alpha and beta(r) of response time distribution, probability
     and number of precursor cells
     """
-
-
     # divide array into cell states
     myc = state[-1]
     il2 = state[-2]

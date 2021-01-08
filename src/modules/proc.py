@@ -3,13 +3,13 @@ import pandas as pd
 from src.modules.readout_module import *
 from itertools import product
 
-def pscan(sim, arr, pname):
+def pscan(sim, arr, pname, crit_fun = check_criteria2):
     old_parameters = dict(sim.params)
 
     def myfun(sim, a, pname):
         sim.params[pname] = a
         cells, molecules = sim.run_sim()
-        r = get_readouts(cells)
+        r = get_readouts(cells, crit_fun = crit_fun)
         r["param_value"] = a
         return r
 
@@ -24,7 +24,7 @@ def pscan(sim, arr, pname):
     return reads
 
 
-def get_2doutput(input, sim, pname1, pname2):
+def get_2doutput(input, sim, pname1, pname2, crit_fun = check_criteria2):
     """
     only use withon pscan2d
     take sim object, change two parameters run sim and get readouts
@@ -34,7 +34,7 @@ def get_2doutput(input, sim, pname1, pname2):
     sim.params[pname1] = p1
     sim.params[pname2] = p2
     cells, molecules = sim.run_sim()
-    r = get_readouts(cells)
+    r = get_readouts(cells, crit_fun = crit_fun)
 
     # add parameter values
     r["pval1"] = p1
@@ -66,20 +66,24 @@ def get_2dscan(outputs):
     return out
 
 
-def get_readouts(df):
+def get_readouts(df, crit_fun):
     cols = ["time", "name", "cell", "value"]
     assert (df.columns == cols).all()
     # helper function, this is applied for each cell to get all readouts
+
     def f(df):
         funs = [get_peak_height, get_area, get_peaktime, get_duration]
-        thres = 1e-1
-        if (df.value>thres).any():
-            reads = [fun(df.time, df.value) for fun in funs]
+
+        # check readout quality criteria for every cell type and only
+        # get readouts if criteria are True or crit_fun is None
+        if crit_fun is not None:
+            if not crit_fun(df):
+                reads = np.empty(len(funs))
+                reads[:] = np.nan
+            else:
+                reads = [fun(df.time, df.value) for fun in funs]
         else:
-            #print(df)
-            reads = np.empty(len(funs))
-            reads[:] = np.nan
-            #reads = [0, 0, 0, 0]
+            reads = [fun(df.time, df.value) for fun in funs]
 
         read_names = ["Peak", "Area", "Peaktime", "Decay"]
         s = pd.Series(reads, index = read_names)

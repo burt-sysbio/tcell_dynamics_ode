@@ -6,6 +6,7 @@ d = {
     "b": 0,  # model influx
     "alpha": 10,
     "beta": 10.,
+    "r_chronic" : 0,
     # proliferation
     "n_div": 1,
     "alpha_p": 10,
@@ -29,23 +30,16 @@ d = {
     "up_il2": 1,
     # virus params
     "vir_alpha": 1.0,  # virus alpha (gamma dist)
-    "vir_load": 1,  # antigen can be set to 0 for no antigen effects
+    "vir_load": 0,  # antigen can be set to 0 for no antigen effects
     "vir_beta": 5.0,  # virus beta (gamma dist)
     "K_ag_myc": 0.5,  # antigen inhibits myc degradation
     "K_ag_il2": 0.5,  # antigen induces il2 secretion on teffs
+    "K_ag_chronic" : 1,
+    "K_pos_fb_chronic" : 1,
+    "K_neg_fb_chronic" : 1,
+    "neg_fb_chronic" : 1,
+    "pos_fb_chronic" : 1,
     # virus params for ode model
     "vir_growth": 1,
     "vir_death": 1,
 }
-
-
-d_no_ag = dict(d)
-d_no_ag["vir_alpha"] = 1
-d_no_ag["vir_beta"] = 0.1
-
-d_ag = dict(d)
-d_ag["vir_alpha"] = 1
-d_ag["vir_beta"] = 1
-d_hi_ag = dict(d)
-d_hi_ag["vir_alpha"] = 1
-d_hi_ag["vir_beta"] = 2

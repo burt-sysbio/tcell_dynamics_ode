@@ -8,28 +8,33 @@ import matplotlib
 sns.set(context = "poster", style = "ticks")
 
 
-def plot_timecourse(df, hue = "name", col = "cell", yscale = "log", drop_naive = True):
+def plot_timecourse(df, hue = None, col = None, row = None, yscale = "log", use_eff = True):
     """
     take either cells or molecules from run sim object
     """
-    if drop_naive:
-        df = df.loc[df.cell != "tnaive"]
+    # always kick out naive cells
+    df = df.loc[df.cell != "tnaive"]
+    # only focus on effector cells, not chronic and total cells
+    if use_eff:
+        df = df.loc[df.cell == "teff"]
 
-    g = sns.relplot(data=df, x="time", hue = hue, col=col, y="value", kind="line")
+    g = sns.relplot(data=df, x="time", hue = hue, col=col, row = row, y="value", kind="line")
     ylim = (1e-1, None) if yscale == "log" else (None, None)
     g.set(yscale=yscale, ylim=ylim)
+    g.set_titles("{col_name}")
     return g
 
 
-def plot_pscan(df, column = "value", col = "readout", row = "cell", xscale = "log"):
+def plot_pscan(df, column = "val_norm", col = "readout", row = "cell"):
     """
     take df generated through pscan function
     """
-    df = df.loc[(df.cell != "tnaive") & (df.readout != "Decay")]
+    df = df.loc[(df.cell == "all_cells") & (df.readout != "Decay")]
     g = sns.relplot(data = df, x = "param_value", y = column, col = col, row = row,
                     facet_kws= {"sharey" : False}, kind = "line")
 
-    g.set(xscale = xscale, xlabel = df.param.iloc[0], ylabel = "effect size")
+    g.set(xlabel = df.param.iloc[0], ylabel = "effect size",
+          xlim = (df.param_value.min(), df.param_value.max()))
     g.set_titles("{col_name}")
     return g
 
