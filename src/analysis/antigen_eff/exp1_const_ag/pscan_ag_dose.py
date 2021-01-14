@@ -26,8 +26,8 @@ plt.show()
 reads = get_readouts(cells, check_criteria2)
 
 res = 30
-arr = np.linspace(0,0.13, res)
+arr = np.linspace(0,0.2, res)
 pscan = pscan(sim, arr, pname)
 
-g = plot_pscan(pscan, column= "val_norm")
+g = plot_pscan(pscan,cells = ["teff"], value_col= "val_norm", palette= ["grey"], hue = "cell")
 plt.show()

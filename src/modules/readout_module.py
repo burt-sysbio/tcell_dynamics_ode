@@ -105,7 +105,7 @@ def check_criteria2(df):
     # test first if peak id is at the end of array
     peak_id = np.argmax(cells)
     if peak_id >= len(cells) - 12:
-        print(df.name + " late peak")
+        #print(df.name + " late peak")
         return False
 
     # check if cells increase and decrease around peak monotonically
@@ -117,10 +117,10 @@ def check_criteria2(df):
     crit2 = np.abs(np.amax(cells) - cells[-1]) > 1e-3
 
     # check that last cells are close to 0
-    crit4 = (cells[-10] < 1e-3).all()
+
+    crit4 = (cells[-10] <= 1).all()
 
     criteria = [crit1, crit2, crit4]
-
     crit = True if all(criteria) else False
     return crit
 

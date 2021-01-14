@@ -3,13 +3,14 @@ import pandas as pd
 from src.modules.readout_module import *
 from itertools import product
 
-def pscan(sim, arr, pname, crit_fun = check_criteria2):
+
+def pscan(sim, arr, pname, crit_fun=check_criteria2):
     old_parameters = dict(sim.params)
 
     def myfun(sim, a, pname):
         sim.params[pname] = a
         cells, molecules = sim.run_sim()
-        r = get_readouts(cells, crit_fun = crit_fun)
+        r = get_readouts(cells, crit_fun=crit_fun)
         r["param_value"] = a
         return r
 
@@ -20,31 +21,34 @@ def pscan(sim, arr, pname, crit_fun = check_criteria2):
     sim.parameters = old_parameters
 
     ## need to make this tidy
-    reads["val_norm"] = reads.groupby(["cell", "readout"])["value"].transform(lambda x: np.log2(x/x.median()))
+    reads["val_norm"] = reads.groupby(["cell", "readout"])["value"].transform(lambda x: np.log2(x / x.median()))
+    reads["val_min"] = reads.groupby(["cell", "readout"])["value"].transform(lambda x: np.log2(x / x.min()))
+
     return reads
 
 
-def get_2doutput(input, sim, pname1, pname2, crit_fun = check_criteria2):
+def get_2doutput(input, sim, pname1, pname2, crit_fun=check_criteria2):
     """
     only use withon pscan2d
     take sim object, change two parameters run sim and get readouts
     """
     # change both parameters run sim and get readouts
-    p1,p2 = input
+    p1, p2 = input
     sim.params[pname1] = p1
     sim.params[pname2] = p2
     cells, molecules = sim.run_sim()
-    r = get_readouts(cells, crit_fun = crit_fun)
+    r = get_readouts(cells, crit_fun=crit_fun)
 
     # add parameter values
     r["pval1"] = p1
     r["pval2"] = p2
     r["pname1"] = pname1
     r["pname2"] = pname2
+
     return r
 
 
-def get_2dinputs(prange1, prange2, res, rangefun = np.geomspace):
+def get_2dinputs(prange1, prange2, res, rangefun=np.linspace):
     """
     p1 : tuple (min, max) of param range for pname1
     p2 : tuple (min, max) of param range for pname2
@@ -61,14 +65,18 @@ def get_2dscan(outputs):
     # get readouts for each cart. prod. of param comb.
     out = pd.concat(outputs)
     # normalize to median
-    out["val_norm"] = out.groupby(["cell", "readout"]).value.transform(lambda x: np.log2(x/x.median()))
+    out["val_norm"] = out.groupby(["cell", "readout"]).value.transform(lambda x: np.log2(x / x.median()))
     out["norm_min"] = out.groupby(["cell", "readout"]).value.transform(lambda x: np.log2(x / x.min()))
     return out
 
 
 def get_readouts(df, crit_fun):
     cols = ["time", "name", "cell", "value"]
-    assert (df.columns == cols).all()
+
+    assert all(col in df.columns for col in cols)
+    if len(df.columns) > len(cols):
+        print("multiple columns detected, please double check if Simlist was used")
+
     # helper function, this is applied for each cell to get all readouts
 
     def f(df):
@@ -86,12 +94,12 @@ def get_readouts(df, crit_fun):
             reads = [fun(df.time, df.value) for fun in funs]
 
         read_names = ["Peak", "Area", "Peaktime", "Decay"]
-        s = pd.Series(reads, index = read_names)
+        s = pd.Series(reads, index=read_names)
         return s
 
     out = df.groupby("cell").apply(f)
     out = out.reset_index()
-    out = pd.melt(out, id_vars = "cell", var_name= "readout")
+    out = pd.melt(out, id_vars="cell", var_name="readout")
     return out
 
 

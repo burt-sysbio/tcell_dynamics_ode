@@ -1,3 +1,6 @@
+# parameters for exp2 const ag chr
+# special: set r_chronic !=0
+
 d = {
     # initial conditions
     "initial_cells": 1.0,
@@ -6,7 +9,7 @@ d = {
     "b": 0,  # model influx
     "alpha": 10,
     "beta": 10.,
-    "r_chronic" : 0,
+    "r_chronic" : 10.0,
     # proliferation
     "n_div": 1,
     "alpha_p": 10,
@@ -38,9 +41,10 @@ d = {
     "K_pos_fb_chr" : 1e3,
     "K_neg_fb_chr" : 1e3,
     "neg_fb_chr" : 1,
-    "pos_fb_chr" : 1,
+    "pos_fb_chr" : 1.0,
     # virus params for ode model
     "vir_growth": 1,
     "vir_death": 1,
-    "K_carr" : 1e10
+    # carrying capacity
+    "K_carr" : 1e10,
 }

@@ -78,10 +78,14 @@ def th_cell_diff(state, time, d, prolif_model, core_model, virus_model):
     n_molecules = 2
     th_state = state[:-(n_molecules+n_chronic)]
     tnaive, teff = get_cell_states(th_state, d)
+    all_cells = tchronic+teff+tnaive
 
     # get proliferation and death based on proliferation model (il2/timer)
     beta_p = prolif_model(state, d)
-    #beta_p = beta_p*fb_fc(tchronic, d["neg_fb_chronic"], d["K_neg_fb_chronic"])
+
+    # add carrying capacity
+    beta_p = (1-all_cells/d["K_carr"])*beta_p
+    beta_p = beta_p*fb_fc(tchronic, d["neg_fb_chr"], d["K_neg_fb_chr"])
 
     # compute il2 and myc changes based on antigen load (set vir load to 0 for no ag effect)
     ag = virus_model(time)
@@ -94,15 +98,19 @@ def th_cell_diff(state, time, d, prolif_model, core_model, virus_model):
     # t cells ODEs
     r_death = 1.0/d["lifetime_eff"]
 
+    # ag effects r chronic menten style
+    r_chronic = menten(ag, d["r_chronic"], d["K_ag_chr"], 3)
+    r_chronic = r_chronic*fb_fc(tchronic, d["pos_fb_chr"], d["K_pos_fb_chr"])
+
+
     pcore = [d["b"], d["d_naive"], d["alpha"], d["d_prec"], d["n_div"],
-             beta, r_death, beta_p, d["r_chronic"]]
+             beta, r_death, beta_p, r_chronic]
 
     dt_state = core_model(th_state, *pcore)
 
     # feedback of antigen on chronic cell diff
-    dt_chronic = d["r_chronic"]*teff#*menten(ag, d["r_chronic"], d["K_ag_chronic"], d["hill"])
+    dt_chronic = r_chronic*teff
     # feedback of chronic cells on chronic cell diff
-    #dt_chronic = dt_chronic#*fb_fc(tchronic, d["pos_fb_chronic"], d["K_pos_fb_chronic"])
 
     # output
     dt_state = np.concatenate((dt_state, [dt_chronic], [dt_il2], [dt_myc]))

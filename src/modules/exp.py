@@ -59,13 +59,13 @@ class Sim:
         summarize effector cells and naive cells
         """
         alpha = self.params["alpha"]
-        tall = np.sum(cells, axis = 1)
+
         tnaive = cells[:, :alpha]
         teff = cells[:, alpha:-self.n_chronic] # myc and il2_ex are at end of array
         teff = np.sum(teff, axis = 1)
         tnaive = np.sum(tnaive, axis = 1)
-        tchronic = tall - (teff+tnaive)
-        
+        tchronic = cells[:, -self.n_chronic]
+        tall = np.sum(cells, axis=1)
         cells = np.stack((tnaive, teff, tchronic, tall), axis = -1)
         return cells    
 

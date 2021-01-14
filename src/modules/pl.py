@@ -8,30 +8,34 @@ import matplotlib
 sns.set(context = "poster", style = "ticks")
 
 
-def plot_timecourse(df, hue = None, col = None, row = None, yscale = "log", use_eff = True):
+def plot_timecourse(df, cells = ["teff", "tchronic", "all_cells"], hue = None, col = None,
+                    row = None, yscale = "log", style = None, palette = None, *kwargs):
     """
     take either cells or molecules from run sim object
     """
-    # always kick out naive cells
-    df = df.loc[df.cell != "tnaive"]
+    # provide cells to plot in cells array
+    df = df.loc[df.cell.isin(cells)]
     # only focus on effector cells, not chronic and total cells
-    if use_eff:
-        df = df.loc[df.cell == "teff"]
-
-    g = sns.relplot(data=df, x="time", hue = hue, col=col, row = row, y="value", kind="line")
+    g = sns.relplot(data=df, x="time", palette = palette, hue = hue, col=col, row = row,
+                    y="value", style = style, kind="line", *kwargs)
     ylim = (1e-1, None) if yscale == "log" else (None, None)
-    g.set(yscale=yscale, ylim=ylim)
+    g.set(yscale=yscale, ylim=ylim, ylabel = "cells")
     g.set_titles("{col_name}")
     return g
 
 
-def plot_pscan(df, column = "val_norm", col = "readout", row = "cell"):
+def plot_pscan(df, cells = ["teff", "tchronic", "all_cells"], hue = None,
+               value_col = "val_norm", col = "readout", row = None, palette = None,
+               *kwargs):
     """
     take df generated through pscan function
     """
-    df = df.loc[(df.cell == "all_cells") & (df.readout != "Decay")]
-    g = sns.relplot(data = df, x = "param_value", y = column, col = col, row = row,
-                    facet_kws= {"sharey" : False}, kind = "line")
+    if (len(cells) > 1) & (hue is None):
+        hue = "cell"
+    df = df.loc[df.cell.isin(cells) & (df.readout != "Decay")]
+    g = sns.relplot(data = df, x = "param_value", y = value_col, col = col, row = row,
+                    hue = hue, facet_kws= {"sharey" : False}, kind = "scatter", palette= palette,
+                    *kwargs)
 
     g.set(xlabel = df.param.iloc[0], ylabel = "effect size",
           xlim = (df.param_value.min(), df.param_value.max()))
@@ -57,13 +61,14 @@ def plot_heatmap(df, value_col, readout, log_color,
     z_arr = df[value_col].values
     z = z_arr.reshape((len(arr1), len(arr2)))
     z = z[:-1, :-1]
-
+    # transform because reshape somehow transposes this
+    z=z.T
     # check if color representation should be log scale
-    sm, norm = get_colorscale(z_arr, log_color, cmap)
+    sm, norm = get_colorscale(log_color, cmap, vmin, vmax)
 
     # plot data
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.pcolormesh(arr1, arr2, z, norm = norm, cmap=cmap, vmin=vmin, vmax=vmax)
+    ax.pcolormesh(arr1, arr2, z, norm = norm, cmap=cmap)
 
     # tick reformatting
     loc_major = ticker.LogLocator(base=10.0, numticks=100)
@@ -86,9 +91,7 @@ def plot_heatmap(df, value_col, readout, log_color,
     return fig
 
 
-def get_colorscale(arr, log, cmap):
-    vmin = np.min(arr)
-    vmax = np.max(arr)
+def get_colorscale(log, cmap, vmin, vmax):
     if log:
         norm = matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
     else:
