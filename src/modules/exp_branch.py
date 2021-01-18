@@ -213,7 +213,7 @@ class Simulation:
         # rename to later merge to original df
         rel_readouts = rel_readouts.rename(columns = {"rel_readout" : "rel_readout_norm"})
 
-        #compute relative readouts for whole data frame
+        # compute relative readouts for whole data frame
         df = self.get_relative_readouts(df)
 
         # only keep two columns to facilitate merge then merge with original rel readout df
