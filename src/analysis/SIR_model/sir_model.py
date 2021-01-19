@@ -54,6 +54,8 @@ def run_pipeline(y0, t, N, beta, gamma):
     df2["SD_lognorm"] = sd_lognorm
     df2["median_lognorm"] = median_lognorm
     df2["CV"] = sd_lognorm / mean_lognorm
+    df2["lognorm_shape"] = shape
+    df2["lognorm_scale"] = scale
     return df1, df2
 
 
@@ -98,12 +100,12 @@ for b in beta_arr:
     df_list.append(df2)
 
 df = pd.concat(df_list)
-df = df[["beta", "SD_lognorm", "mean_lognorm", "CV", "fit_error"]]
+df = df[["beta", "SD_lognorm", "mean_lognorm", "CV", "fit_error", "lognorm_shape", "lognorm_scale"]]
 df = df.drop_duplicates()
 df = df.melt(id_vars= "beta")
 df["r0"] = df.beta/gamma
 
-g = sns.relplot(data = df, x = "r0", y = "value", col = "variable",
+g = sns.relplot(data = df, x = "r0", y = "value", col = "variable", col_wrap= 3,
                 facet_kws= {"sharey" : False})
 
 #g.set(xscale = "log")
@@ -114,8 +116,8 @@ g.savefig("../figures/antigen_effects/SIR_lognorm_fits.pdf")
 
 
 # take result of pscan and parameterize functions
-def fit_SD(x, power):
-    out = 1 / (x**power - 1)
+def fit_SD(x, a, b):
+    out = 1 / (a*x**b - 1)
     return out
 
 
@@ -124,25 +126,26 @@ def fit_mean(x, power):
     return out
 
 
-fit_param = "mean_lognorm"
-fit_fun = fit_SD
-power = 0.25
+def SIR_fit(df, r0_arr, fit_param, fit_fun):
+    ydata = df.loc[df.variable == fit_param, "value"]
+    ydata = ydata.values
+    popt, pcov = curve_fit(fit_fun, r0_arr[1:], ydata[1:])
+    yfit = fit_fun(r0_arr[1:], *popt)
+    return ydata, yfit, popt
 
-ydata = df.loc[df.variable == fit_param, "value"]
-ydata = ydata.values
 
-#popt, pcov = curve_fit(fit_fun, r0_arr[1:], ydata[1:])
-#yfit = fit_fun(r0_arr[1:], *popt)
-yfit = fit_fun(r0_arr[1:], power = power)
-label_fun = "1/(x**"+str(power)+"-1)"
-fig, ax = plt.subplots()
+params = ["SD_lognorm", "mean_lognorm"]
+for p in params:
+    ydata, yfit, popt = SIR_fit(df, r0_arr, p, fit_SD)
+    fig, ax = plt.subplots()
 
-ax.scatter(r0_arr[1:], ydata[1:], label = fit_param +" - SIR fit",
-           s = 10.0)
-ax.plot(r0_arr[1:], yfit, label = label_fun, c = "tab:orange", lw = 2)
-ax.set_xlabel("r0")
-ax.set_ylabel("value")
-ax.set_ylim(0,20)
-ax.legend()
-plt.show()
-fig.savefig("../figures/antigen_effects/r0_parameterization_"+fit_param+".pdf")
+    ax.scatter(r0_arr[1:], ydata[1:], label = p +" - SIR fit",
+               s = 10.0)
+    ax.plot(r0_arr[1:], yfit, label = "1/(a*x**b-1)", c = "tab:orange", lw = 2)
+    ax.set_xlabel("r0")
+    ax.set_ylabel("value")
+    ax.set_ylim(0,20)
+    ax.set_title(f"a={np.round(popt[0],2)}, b={np.round(popt[1],2)}")
+    ax.legend()
+    plt.show()
+    fig.savefig("../figures/antigen_effects/r0_parameterization_"+p+".pdf")
