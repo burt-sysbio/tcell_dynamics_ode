@@ -81,6 +81,7 @@ class Sim:
 
         # initialize virus model with given parameters
         vir_model = self.virus_model(self.time, self.params)
+
         p_model = self.prolif_model(self.name, self.params)
         args = (self.params, p_model, self.core, vir_model)
         state = odeint(self.model, y0, self.time, args = args)

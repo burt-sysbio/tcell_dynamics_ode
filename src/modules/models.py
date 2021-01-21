@@ -4,13 +4,49 @@ keep all ode models here
 """
 import numpy as np
 from src.modules.models_helper import *
-from scipy.stats import gamma
+from scipy.stats import gamma, lognorm
 from scipy import interpolate
 from scipy.integrate import odeint
 from numba import jit
 # =============================================================================
 # virus models
 # ============================================================================
+def sir_parameterization(r0, a, b):
+    assert r0>=1
+    return 1 / (a*r0**b - 1)
+
+
+def vir_model_SIR(time, d):
+    r0 = d["SIR_r0"]
+    # these parameters come from fits in analysis/SIR_model
+    SD = sir_parameterization(r0, 1.02, 0.37)
+    mean = sir_parameterization(r0, 1.05, 0.18)
+
+    shape, scale = get_lognormdist_params(mean, SD)
+    mylognorm = lognorm(s=shape, scale = scale)
+
+    def f(t):
+        return mylognorm.pdf(t)
+    return f
+
+
+def get_lognormdist_params(mode, stddev):
+    """
+    Given the mode and std. dev. of the log-normal distribution, this function
+    returns the shape and scale parameters for scipy's parameterization of the
+    distribution.
+    """
+    p = np.poly1d([1, -1, 0, 0, -(stddev/mode)**2])
+    r = p.roots
+    sol = r[(r.imag == 0) & (r.real > 0)].real
+
+    # convert to float otherwise output gets [arrays]
+    sol = float(sol)
+    shape = np.sqrt(np.log(sol))
+    scale = mode * sol
+    return shape, scale
+
+
 def vir_model_gamma(time, d):
     """
     should return function object that accepts single argument time
