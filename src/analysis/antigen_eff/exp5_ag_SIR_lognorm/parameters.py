@@ -24,19 +24,17 @@ d = {
     # leave lifetime myc to 1 and change K_myc if neccessary
     "lifetime_myc": 1.0,
     # il2 parameters
+    "r_il2": 1e3,
+    "r_il2_eff": 1e3,
     "up_il2": 1,
     "base_il2": 0,
-    # leave uptake and K il2 to 1 and change r_il2 if neccessary
-    "r_il2": 1e2,
-    "r_il2_eff": 1e2,
     "K_il2": 1.0,  # il2 effect on prolif
-    "up_il2": 1,
     # virus params
     "vir_alpha": 1.0,  # virus alpha (gamma dist)
     "vir_load": 1.0,  # antigen can be set to 0 for no antigen effects
     "vir_beta": 2.0,  # virus beta (gamma dist)
     "K_ag_myc": 0.5,  # antigen inhibits myc degradation
-    "K_ag_il2": 0.5,  # antigen induces il2 secretion on teffs
+    "K_ag_il2": 1.0,  # antigen induces il2 secretion on teffs
     "K_ag_chr" : 0.5,
     "K_pos_fb_chr" : 1e2,
     "K_neg_fb_chr" : 1e2,

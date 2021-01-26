@@ -26,7 +26,7 @@ pname = "SIR_r0"
 
 res = 50
 down = 1
-up = 3
+up = 10
 
 arr = np.linspace(down, up, res)
 res1 = proc.pscan(sim, arr, pname)

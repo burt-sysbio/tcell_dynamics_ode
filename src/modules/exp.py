@@ -11,6 +11,7 @@ import pandas as pd
 import warnings
 from src.modules.models_helper import prolif_wrapper
 
+
 class Sim:
     """
     model simulation class

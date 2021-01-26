@@ -4,12 +4,52 @@ from src.modules.readout_module import *
 from itertools import product
 
 
+def run_timecourses(sim, arr, pname):
+    old_parameters = dict(sim.params)
+
+    cell_list = []
+    mol_list = []
+    for a in arr:
+        sim.params[pname] = a
+        cells, molecules = sim.run_sim()
+        cells["pname"] = pname
+        cells["param_value"] = a
+        molecules["pname"] = pname
+        molecules["param_value"] = a
+        cell_list.append(cells)
+        mol_list.append(molecules)
+
+    sim.parameters = old_parameters
+
+    cells = pd.concat(cell_list)
+    molecules = pd.concat(mol_list)
+    return cells, molecules
+
+
+def norm_molecules(df, d, name = "il2"):
+    mols = ["IL2", "MYC", "Virus"]
+    if name == "il2":
+        params = ["K_il2", "K_myc", "K_ag_il2"]
+    else:
+        params = ["K_il2", "K_myc", "K_ag_myc"]
+
+    df["EC50"] = 1
+    # assign corresponding EC50 value to each molecules and normalize
+    for m, p in zip(mols, params):
+        df.loc[df["cell"] == m, ["EC50"]] = d[p]
+
+    df["value"] =df.value.values / df.EC50.values
+
+    return df
+
+
 def pscan(sim, arr, pname, crit_fun=check_criteria2):
     old_parameters = dict(sim.params)
 
     def myfun(sim, a, pname):
         sim.params[pname] = a
         cells, molecules = sim.run_sim()
+
         r = get_readouts(cells, crit_fun=crit_fun)
         r["param_value"] = a
         return r
@@ -105,6 +145,7 @@ def get_readouts(df, crit_fun):
 
 def vary_param_norm(df, arr, edge_names, normtype):
     """
+    deprecated, pscan can do this now. leave for earlier scripts that might need it
     take df from pscan and normalize
     Parameters
     ----------
