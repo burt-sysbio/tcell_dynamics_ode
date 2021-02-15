@@ -3,26 +3,26 @@
 
 d = {
     # initial conditions
-    "initial_cells": 1.0,
+    "initial_cells": 100.0,
     "il2_y0": 1.0,
     # differentiation
     "b": 0,  # model influx
     "alpha": 10,
-    "beta": 10.,
+    "beta": 5.,
     "r_chronic" : 1,
     # proliferation
     "n_div": 1,
     "alpha_p": 10,
-    "beta_p": 30.0,
+    "beta_p": 20.0,
     # death
-    "lifetime_eff": 1.0,
+    "lifetime_eff": 4.12, # 1/0.24 literature data
     "d_prec": 0,
     "d_naive": 0,
     "hill": 3,
     # myc parameters
     "K_myc": 0.01,
     # leave lifetime myc to 1 and change K_myc if neccessary
-    "lifetime_myc": 1.0,
+    "lifetime_myc": 3.125,
     # il2 parameters
     "r_il2": 1e3,
     "r_il2_eff": 1e3,

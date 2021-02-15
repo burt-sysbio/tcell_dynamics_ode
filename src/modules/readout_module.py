@@ -117,7 +117,6 @@ def check_criteria2(df):
     crit2 = np.abs(np.amax(cells) - cells[-1]) > 1e-3
 
     # check that last cells are close to 0
-
     crit4 = (cells[-10] <= 1).all()
 
     criteria = [crit1, crit2, crit4]
